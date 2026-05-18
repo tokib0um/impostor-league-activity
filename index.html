@@ -1,0 +1,3413 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>IMPOSTOR LEAGUE — Pop Culture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Russo+One&family=Nunito:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════ RESET & TOKENS ═══════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#04040c;--bg2:#07071a;--bg3:#0d0d22;
+  --card:#0f0f28;--card2:#181840;--panel:#0a0a1f;
+  --r:#ff2255;--b:#00eeff;--y:#ffe600;--g:#00ff88;--p:#bf5fff;--o:#ff8800;
+  --text:#eeeeff;--text2:#6677aa;
+  --border:rgba(100,120,255,0.12);
+  --r16:16px;--r10:10px;
+  --tr:.18s cubic-bezier(.4,0,.2,1);
+  --font-pixel:'Press Start 2P',monospace;
+  --font-h:'Russo One','Impact',sans-serif;
+  --font-b:'Nunito','Segoe UI',sans-serif;
+}
+html,body{min-height:100dvh;background:var(--bg);color:var(--text);font-family:var(--font-b);overflow-x:hidden;-webkit-tap-highlight-color:transparent;user-select:none;}
+body{display:flex;flex-direction:column}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-thumb{background:var(--r);border-radius:3px}
+
+/* ── SCANLINE + NOISE ── */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:9999;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.06) 2px,rgba(0,0,0,.06) 4px);
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+}
+
+/* ── PIXEL GRID ── */
+.pixel-grid{
+  position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    linear-gradient(rgba(100,120,255,.04) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(100,120,255,.04) 1px,transparent 1px);
+  background-size:32px 32px;
+}
+
+/* ═══════════════ SCREENS ═══════════════ */
+.screen{display:none;flex-direction:column;min-height:100dvh;padding:16px;position:relative;z-index:1;}
+.screen.active{display:flex;animation:screenIn .25s cubic-bezier(.2,1,.3,1) both}
+@keyframes screenIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+
+/* ═══════════════ BUTTONS ═══════════════ */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:14px 20px;border-radius:6px;border:none;cursor:pointer;
+  font-family:var(--font-b);font-size:.95rem;font-weight:900;letter-spacing:.5px;
+  transition:var(--tr);min-height:50px;width:100%;position:relative;overflow:hidden;
+  image-rendering:pixelated;
+}
+.btn::before{content:'';position:absolute;inset:0;background:linear-gradient(rgba(255,255,255,.1),transparent 60%);pointer-events:none}
+.btn:active{transform:scale(.95) translateY(2px)}
+.btn-primary{
+  background:var(--r);color:#fff;
+  box-shadow:0 4px 0 #aa0022, 0 6px 20px rgba(255,34,85,.4);
+  text-shadow:1px 1px 0 rgba(0,0,0,.5);
+}
+.btn-primary:hover{box-shadow:0 4px 0 #aa0022, 0 8px 32px rgba(255,34,85,.6)}
+.btn-primary:active{box-shadow:0 1px 0 #aa0022, 0 2px 10px rgba(255,34,85,.3)}
+.btn-secondary{background:var(--card2);color:var(--text);border:2px solid var(--border);box-shadow:0 3px 0 rgba(0,0,0,.4)}
+.btn-success{background:var(--b);color:#000;font-weight:900;box-shadow:0 4px 0 #0088aa, 0 6px 20px rgba(0,238,255,.35)}
+.btn-danger{background:#cc2211;color:#fff;box-shadow:0 4px 0 #660000}
+.btn-ghost{background:transparent;color:var(--text2);border:2px solid var(--border)}
+.btn-ghost:hover{border-color:rgba(100,120,255,.3);color:var(--text)}
+.btn-sm{padding:8px 14px;font-size:.8rem;min-height:36px}
+.btn:disabled{opacity:.3;cursor:not-allowed;pointer-events:none}
+
+/* ─ Ripple on primary ─ */
+@keyframes ripple{
+  0%{box-shadow:0 4px 0 #aa0022,0 6px 20px rgba(255,34,85,.4),0 0 0 0 rgba(255,34,85,.5)}
+  70%{box-shadow:0 4px 0 #aa0022,0 6px 20px rgba(255,34,85,.4),0 0 0 16px rgba(255,34,85,0)}
+  100%{box-shadow:0 4px 0 #aa0022,0 6px 20px rgba(255,34,85,.4),0 0 0 0 rgba(255,34,85,0)}
+}
+.ripple{animation:ripple 2s ease infinite}
+
+/* ═══════════════ CARDS ═══════════════ */
+.card{
+  background:var(--card);border-radius:8px;
+  border:2px solid var(--border);
+  box-shadow:0 4px 0 rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.04);
+  padding:16px;
+}
+.card+.card{margin-top:10px}
+
+/* ═══════════════ INPUTS ═══════════════ */
+input[type=text],input[type=number]{
+  width:100%;padding:12px 14px;
+  background:var(--bg3);border:2px solid var(--border);
+  border-radius:6px;color:var(--text);font-size:.95rem;
+  font-family:var(--font-b);outline:none;transition:var(--tr);
+}
+input:focus{border-color:var(--b);box-shadow:0 0 0 3px rgba(0,238,255,.1)}
+label{display:block;font-size:.75rem;color:var(--text2);margin-bottom:5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+
+/* ═══════════════ MISC ═══════════════ */
+.divider{height:2px;border:none;margin:14px 0;background:linear-gradient(90deg,transparent,var(--border),transparent)}
+.section-label{
+  font-size:.65rem;text-transform:uppercase;letter-spacing:3px;
+  color:var(--b);font-weight:700;margin-bottom:10px;
+  display:flex;align-items:center;gap:8px;font-family:var(--font-pixel);
+}
+.section-label::after{content:'';flex:1;height:1px;background:rgba(0,238,255,.15)}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:4px;font-size:.72rem;font-weight:900;letter-spacing:.5px;text-transform:uppercase}
+.badge-civil{background:rgba(0,255,136,.12);color:var(--g);border:1px solid rgba(0,255,136,.25)}
+.badge-undercover{background:rgba(255,34,85,.12);color:var(--r);border:1px solid rgba(255,34,85,.25)}
+.badge-mrwhite{background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.15)}
+.error-msg{background:rgba(255,34,85,.1);border:1px solid rgba(255,34,85,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--r);display:none;margin-top:8px}
+.error-msg.show{display:block}
+.info-row{display:flex;align-items:center;gap:8px;background:rgba(0,238,255,.06);border:1px solid rgba(0,238,255,.15);border-radius:6px;padding:8px 12px;font-size:.8rem;color:var(--b)}
+
+/* ═══════════════ ★ HOME ═══════════════ */
+#screen-home{align-items:center;justify-content:center;text-align:center;overflow:hidden;background:var(--bg)}
+.home-inner{position:relative;z-index:2;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;gap:0}
+
+/* Pixel art logo SVG */
+.home-logo-wrap{position:relative;margin-bottom:8px}
+.home-logo-svg{width:320px;max-width:90vw;height:auto;image-rendering:pixelated;filter:drop-shadow(0 0 20px rgba(255,34,85,.6))}
+
+/* Scanline on logo */
+.home-logo-wrap::after{
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.15) 3px,rgba(0,0,0,.15) 4px);
+  mix-blend-mode:multiply;
+}
+
+.home-subtitle{
+  font-family:var(--font-pixel);font-size:.55rem;letter-spacing:3px;color:var(--b);
+  text-shadow:0 0 10px var(--b);margin-bottom:16px;
+  animation:blinkCursor 1.2s step-end infinite;
+}
+@keyframes blinkCursor{50%{opacity:.4}}
+
+.home-tags{display:flex;flex-wrap:wrap;justify-content:center;gap:5px;margin:0 0 20px}
+.home-tag{
+  padding:3px 10px;border-radius:4px;font-size:.68rem;font-weight:900;
+  letter-spacing:.5px;text-transform:uppercase;border:2px solid currentColor;
+  font-family:var(--font-pixel);image-rendering:pixelated;
+}
+.home-tag.r{color:var(--r);background:rgba(255,34,85,.1)}
+.home-tag.b{color:var(--b);background:rgba(0,238,255,.1)}
+.home-tag.y{color:var(--y);background:rgba(255,230,0,.1)}
+.home-tag.g{color:var(--g);background:rgba(0,255,136,.1)}
+.home-tag.p{color:var(--p);background:rgba(191,95,255,.1)}
+
+/* Pixel speech bubble */
+.speech-bubble{
+  position:relative;background:var(--y);color:#000;
+  padding:8px 16px;border-radius:4px;font-weight:900;font-size:.8rem;
+  width:fit-content;margin:0 auto 14px;
+  box-shadow:3px 3px 0 rgba(0,0,0,.5);
+  font-family:var(--font-pixel);font-size:.5rem;line-height:1.6;
+}
+.speech-bubble::after{
+  content:'';position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);
+  border:9px solid transparent;border-top-color:var(--y);border-bottom:0;
+}
+.home-desc{font-size:.85rem;color:var(--text2);line-height:1.7;max-width:300px;margin-bottom:24px}
+.home-desc b{color:var(--text)}
+.home-btns{display:flex;flex-direction:column;gap:10px;width:100%}
+
+/* Pixel characters floating in background */
+.pixel-bg-chars{position:absolute;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+.px-char{position:absolute;image-rendering:pixelated;opacity:.12;animation:floatChar linear infinite}
+@keyframes floatChar{from{transform:translateY(100vh) rotate(0deg)}to{transform:translateY(-120px) rotate(360deg)}}
+
+/* ═══════════════ SETUP ═══════════════ */
+#screen-setup .scroll-area{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1}
+.players-list{display:flex;flex-direction:column;gap:6px}
+.player-item{
+  display:flex;align-items:center;gap:10px;
+  background:var(--bg3);border-radius:6px;
+  border:2px solid var(--border);padding:8px 12px;transition:var(--tr);
+}
+.player-item:focus-within{border-color:var(--b)}
+.player-num{
+  width:28px;height:28px;border-radius:4px;
+  background:var(--r);display:flex;align-items:center;justify-content:center;
+  font-size:.75rem;font-weight:900;flex-shrink:0;
+  box-shadow:0 3px 0 #aa0022;font-family:var(--font-pixel);
+}
+.player-input{flex:1;background:transparent;border:none;color:var(--text);font-size:.95rem;font-family:var(--font-b);font-weight:700;outline:none}
+.player-del{background:none;border:none;color:var(--text2);font-size:1rem;cursor:pointer;padding:4px;transition:var(--tr)}
+.player-del:active{color:var(--r);transform:scale(1.3)}
+.roles-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.role-box{background:var(--bg3);border-radius:6px;border:2px solid var(--border);padding:12px}
+.role-box-label{font-size:.7rem;color:var(--text2);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-family:var(--font-pixel)}
+.stepper{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.stepper-btn{
+  width:34px;height:34px;background:var(--card2);border:2px solid var(--border);
+  border-radius:4px;color:var(--text);font-size:1.2rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:var(--tr);
+  font-family:var(--font-b);font-weight:900;box-shadow:0 3px 0 rgba(0,0,0,.4);
+}
+.stepper-btn:active{box-shadow:0 1px 0 rgba(0,0,0,.4);transform:translateY(2px)}
+.role-val{font-family:var(--font-pixel);font-size:1.8rem;color:var(--text);text-align:center}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border-radius:6px;border:2px solid var(--border);padding:12px}
+.cat-group{margin-bottom:12px}
+.cat-group-header{font-family:var(--font-h);font-size:1.2rem;letter-spacing:2px;margin-bottom:7px;display:flex;align-items:center;gap:6px}
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.cat-item{
+  display:flex;align-items:center;gap:8px;
+  background:var(--bg3);border:2px solid var(--border);
+  border-radius:6px;padding:8px 10px;cursor:pointer;transition:var(--tr);
+}
+.cat-item.selected{border-color:var(--r);background:rgba(255,34,85,.07)}
+.cat-item:active{transform:scale(.96)}
+.cat-check{width:18px;height:18px;border:2px solid var(--border);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:var(--tr)}
+.cat-item.selected .cat-check{background:var(--r);border-color:var(--r)}
+.cat-check-icon{display:none;color:#fff;font-size:.65rem;font-weight:900}
+.cat-item.selected .cat-check-icon{display:block}
+.cat-name{font-size:.78rem;font-weight:700;line-height:1.2}
+
+/* ═══════════════ DISTRIBUTION ═══════════════ */
+#screen-distribution{align-items:stretch;justify-content:flex-start;background:radial-gradient(ellipse at top,#1a0030 0%,var(--bg) 60%)}
+.dist-header{text-align:center;padding:16px 0 8px}
+.dist-round-pill{
+  display:inline-block;background:rgba(255,230,0,.08);
+  border:2px solid rgba(255,230,0,.25);border-radius:4px;
+  padding:4px 14px;font-size:.55rem;font-weight:900;color:var(--y);
+  letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;
+  font-family:var(--font-pixel);
+}
+.dist-progress{display:flex;gap:4px;justify-content:center;margin-bottom:14px}
+.dist-dot{height:6px;border-radius:2px;background:rgba(255,255,255,.08);transition:var(--tr);flex:1;max-width:22px}
+.dist-dot.done{background:var(--g)}.dist-dot.current{background:var(--y);box-shadow:0 0 8px var(--y)}
+.dist-card{
+  background:linear-gradient(160deg,#150a30,#080818);
+  border-radius:12px;border:2px solid rgba(191,95,255,.2);
+  padding:24px 18px;display:flex;flex-direction:column;align-items:center;gap:12px;
+  box-shadow:0 8px 0 rgba(0,0,0,.5),0 12px 40px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.05);
+  position:relative;overflow:hidden;
+}
+.dist-card::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 4px);pointer-events:none}
+.dist-player-avatar{
+  width:60px;height:60px;border-radius:8px;
+  background:linear-gradient(135deg,var(--p),var(--r));
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.6rem;font-family:var(--font-pixel);
+  box-shadow:0 4px 0 rgba(0,0,0,.5),0 0 20px rgba(191,95,255,.4);
+  border:2px solid rgba(255,255,255,.15);image-rendering:pixelated;
+}
+.dist-player-name{font-family:var(--font-h);font-size:2.2rem;letter-spacing:3px;color:#fff;text-shadow:0 0 20px rgba(191,95,255,.6)}
+.dist-instruction{font-size:.78rem;color:var(--text2);text-align:center;line-height:1.6;max-width:240px}
+.secret-card{
+  width:100%;background:rgba(0,0,0,.5);border-radius:8px;
+  border:2px solid rgba(255,255,255,.08);padding:20px;
+  text-align:center;transition:var(--tr);position:relative;overflow:hidden;cursor:pointer;
+}
+.secret-card.blurred::after{
+  content:'👆 APPUIE POUR RÉVÉLER';
+  position:absolute;inset:0;background:#000;border-radius:6px;
+  display:flex;align-items:center;justify-content:center;
+  color:rgba(255,255,255,.3);font-size:.5rem;font-weight:700;
+  letter-spacing:2px;font-family:var(--font-pixel);line-height:1.6;
+}
+.secret-card.blurred .secret-role-tag,
+.secret-card.blurred .secret-character,
+.secret-card.blurred .reveal-tap-hint{visibility:hidden}
+.secret-role-tag{font-size:.55rem;text-transform:uppercase;letter-spacing:2px;color:var(--text2);font-weight:700;margin-bottom:8px;font-family:var(--font-pixel)}
+.secret-character{
+  font-family:var(--font-h);font-size:2.4rem;letter-spacing:2px;
+  color:var(--y);text-shadow:0 0 16px rgba(255,230,0,.6);line-height:1.1;
+}
+.secret-character.mrwhite{font-size:1rem;color:rgba(255,255,255,.5);text-shadow:none;font-family:var(--font-pixel);line-height:1.8}
+.reveal-tap-hint{margin-top:8px;font-size:.65rem;color:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;gap:4px}
+.reveal-actions{width:100%;display:none;flex-direction:column;gap:8px}
+
+/* ═══════════════ GAME ═══════════════ */
+.game-topbar{display:flex;align-items:center;justify-content:space-between;padding:4px 0 10px}
+.game-round-badge{
+  background:var(--r);border-radius:6px;padding:5px 14px;
+  font-family:var(--font-pixel);font-size:.7rem;letter-spacing:1px;
+  box-shadow:0 4px 0 #aa0022,0 0 20px rgba(255,34,85,.4);
+}
+.game-alive-count{font-size:.72rem;color:var(--text2);font-weight:700;background:var(--bg3);border-radius:4px;padding:5px 10px;border:2px solid var(--border);font-family:var(--font-pixel)}
+
+/* Current speaker card */
+.current-speaker-card{
+  background:linear-gradient(160deg,#150a30,#08080f);
+  border-radius:12px;border:2px solid rgba(191,95,255,.25);
+  padding:18px 14px;display:flex;flex-direction:column;align-items:center;gap:10px;
+  box-shadow:0 6px 0 rgba(0,0,0,.5),0 0 30px rgba(191,95,255,.1);
+  position:relative;overflow:hidden;
+}
+.current-speaker-card::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.05) 3px,rgba(0,0,0,.05) 4px);pointer-events:none}
+.cs-label{font-size:.5rem;text-transform:uppercase;letter-spacing:3px;color:var(--text2);font-weight:700;font-family:var(--font-pixel)}
+.cs-name{font-family:var(--font-h);font-size:2.4rem;letter-spacing:3px;color:#fff;text-shadow:0 0 20px rgba(191,95,255,.5);text-align:center;line-height:1.1}
+.cs-chrono-wrap{position:relative;width:88px;height:88px;display:flex;align-items:center;justify-content:center}
+.cs-ring{position:absolute;inset:0;transform:rotate(-90deg)}
+.cs-ring-bg{fill:none;stroke:rgba(255,255,255,.07);stroke-width:7}
+.cs-ring-bar{fill:none;stroke:var(--b);stroke-width:7;stroke-linecap:round;stroke-dasharray:213.6;stroke-dashoffset:0;transition:stroke-dashoffset .6s linear,stroke .3s}
+.cs-ring-bar.warn{stroke:var(--y)}.cs-ring-bar.danger{stroke:var(--r);filter:drop-shadow(0 0 4px var(--r))}
+.cs-time{font-family:var(--font-pixel);font-size:1.6rem;color:#fff;position:relative;z-index:1;letter-spacing:2px}
+.cs-time.warn{color:var(--y)}.cs-time.danger{color:var(--r)}
+.cs-progress{display:flex;gap:4px;flex-wrap:wrap;justify-content:center;width:100%}
+.cs-dot{width:10px;height:10px;border-radius:2px;border:2px solid rgba(255,255,255,.15);transition:.2s;image-rendering:pixelated}
+.cs-dot.done{background:var(--g);border-color:var(--g);box-shadow:0 0 5px var(--g)}
+.cs-dot.current{background:var(--y);border-color:var(--y);box-shadow:0 0 8px var(--y)}
+#cs-start-wrap .btn,#cs-pass-wrap .btn{width:220px}
+#end-of-round-wrap{animation:screenIn .3s ease both}
+
+/* Speaking list */
+.speaking-list{display:flex;flex-direction:column;gap:6px}
+.speaking-item{
+  display:flex;align-items:center;gap:10px;
+  background:var(--card);border-radius:6px;
+  border:2px solid var(--border);padding:10px 12px;transition:var(--tr);
+}
+.speaking-item.s-current{border-color:var(--y);background:rgba(255,230,0,.05);box-shadow:0 0 12px rgba(255,230,0,.1)}
+.speaking-item.s-done{opacity:.4}
+.speaking-num{
+  width:24px;height:24px;border-radius:4px;background:var(--bg3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.6rem;font-weight:900;flex-shrink:0;border:2px solid var(--border);
+  font-family:var(--font-pixel);
+}
+.speaking-item.s-current .speaking-num{background:var(--y);color:#000;border-color:var(--y);box-shadow:0 0 8px rgba(255,230,0,.5)}
+.speaking-item.s-done .speaking-num{background:var(--g);color:#000;border-color:var(--g)}
+.speaking-name{flex:1;font-weight:900;font-size:.92rem}
+.speaking-tag{font-size:.65rem;color:var(--text2)}
+.speaking-item.s-current .speaking-tag{color:var(--y)}
+
+/* ═══════════════ VOTE ═══════════════ */
+.vote-header{text-align:center;padding:8px 0 14px}
+.vote-title{
+  font-family:var(--font-pixel);font-size:1.4rem;letter-spacing:2px;
+  background:linear-gradient(135deg,var(--r),var(--p));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.vote-subtitle{font-size:.72rem;color:var(--text2);margin-top:4px}
+.vote-list{display:flex;flex-direction:column;gap:8px}
+.vote-item{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--card);border-radius:6px;
+  border:2px solid var(--border);padding:13px 15px;
+  cursor:pointer;transition:var(--tr);
+}
+.vote-item:active{transform:scale(.97)}
+.vote-item.selected{
+  border-color:var(--r);background:rgba(255,34,85,.08);
+  box-shadow:0 0 0 3px rgba(255,34,85,.15),0 4px 0 #aa0022;
+}
+.vote-name{font-weight:900;font-size:.95rem}
+.vote-circle{
+  width:24px;height:24px;border:2px solid var(--border);
+  border-radius:4px;display:flex;align-items:center;justify-content:center;
+  transition:var(--tr);font-size:.75rem;
+}
+.vote-item.selected .vote-circle{background:var(--r);border-color:var(--r);color:#fff;box-shadow:0 2px 0 #aa0022}
+
+/* ═══════════════ ELIMINATION ═══════════════ */
+#screen-elimination{align-items:stretch;justify-content:flex-start}
+.elim-splash{
+  border-radius:10px;padding:28px 18px;text-align:center;
+  position:relative;overflow:hidden;margin-bottom:12px;
+}
+.elim-splash::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,.1) 3px,rgba(0,0,0,.1) 4px);pointer-events:none}
+.elim-splash.civil{background:linear-gradient(160deg,rgba(0,255,136,.1),rgba(0,200,100,.04));border:2px solid rgba(0,255,136,.25)}
+.elim-splash.undercover{background:linear-gradient(160deg,rgba(255,34,85,.12),rgba(180,0,50,.04));border:2px solid rgba(255,34,85,.3)}
+.elim-splash.mrwhite{background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(200,200,255,.02));border:2px solid rgba(255,255,255,.15)}
+.elim-big-emoji{font-size:3rem;margin-bottom:8px;display:block;filter:drop-shadow(0 0 10px currentColor)}
+.elim-was{font-size:.55rem;text-transform:uppercase;letter-spacing:3px;color:var(--text2);font-weight:700;font-family:var(--font-pixel)}
+.elim-player-name{font-family:var(--font-h);font-size:2.8rem;letter-spacing:3px;margin:4px 0;line-height:1}
+.elim-splash.civil .elim-player-name{color:var(--g);text-shadow:0 0 20px rgba(0,255,136,.5)}
+.elim-splash.undercover .elim-player-name{color:var(--r);text-shadow:0 0 20px rgba(255,34,85,.5)}
+.elim-splash.mrwhite .elim-player-name{color:#fff;text-shadow:0 0 20px rgba(255,255,255,.4)}
+.elim-role-label{font-family:var(--font-pixel);font-size:.8rem;letter-spacing:1px;margin:6px 0}
+.elim-splash.civil .elim-role-label{color:var(--g)}.elim-splash.undercover .elim-role-label{color:var(--r)}.elim-splash.mrwhite .elim-role-label{color:#ccc}
+.elim-word-reveal{font-size:.85rem;color:var(--text2);margin-top:4px}
+.elim-word-reveal span{color:var(--y);font-weight:900}
+
+/* ═══════════════ MR WHITE ═══════════════ */
+.mrw-card{
+  background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(191,95,255,.04));
+  border:2px solid rgba(255,255,255,.1);border-radius:10px;padding:24px 18px;text-align:center;
+}
+.mrw-name{font-family:var(--font-h);font-size:2.2rem;letter-spacing:3px;color:#fff;margin:10px 0}
+
+/* ═══════════════ VICTORY ═══════════════ */
+#screen-victory{
+  align-items:center;justify-content:center;text-align:center;
+  background:radial-gradient(ellipse at center,#1a0800 0%,var(--bg) 70%);
+}
+.victory-inner{position:relative;z-index:1;width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center}
+.victory-stamp{font-size:4.5rem;margin-bottom:4px;animation:stampIn .5s cubic-bezier(.2,1.5,.5,1) both;filter:drop-shadow(0 0 20px var(--y))}
+@keyframes stampIn{from{opacity:0;transform:scale(2.5) rotate(-10deg)}to{opacity:1;transform:scale(1) rotate(0deg)}}
+.victory-title{font-family:var(--font-pixel);font-size:1.1rem;letter-spacing:2px;line-height:1.4;margin-bottom:8px}
+.victory-title.civil{color:var(--g);text-shadow:0 0 24px rgba(0,255,136,.6)}
+.victory-title.undercover{color:var(--r);text-shadow:0 0 24px rgba(255,34,85,.6)}
+.victory-title.mrwhite{color:#fff;text-shadow:0 0 24px rgba(255,255,255,.5)}
+.victory-sub{color:var(--text2);font-size:.82rem;max-width:260px;line-height:1.6;margin-bottom:18px}
+.recap-list{width:100%;display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
+.recap-item{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:6px;border:2px solid var(--border);padding:10px 13px;text-align:left}
+.recap-name{font-weight:900;font-size:.9rem}
+.recap-word{font-size:.72rem;color:var(--text2);margin-top:1px}
+
+/* ═══════════════ TOAST ═══════════════ */
+#toast-container{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;display:flex;flex-direction:column;gap:6px;pointer-events:none;width:calc(100% - 24px);max-width:340px}
+.toast{
+  background:var(--card2);border-radius:6px;border-left:4px solid var(--r);
+  padding:10px 13px;font-size:.82rem;font-weight:700;color:var(--text);
+  box-shadow:0 4px 0 rgba(0,0,0,.5),0 8px 20px rgba(0,0,0,.4);
+  animation:toastSlide .2s cubic-bezier(.2,1,.3,1);
+  font-family:var(--font-pixel);font-size:.55rem;line-height:1.6;
+}
+.toast.success{border-color:var(--g)}.toast.warning{border-color:var(--y)}
+@keyframes toastSlide{from{opacity:0;transform:translateY(-12px) scale(.95)}to{opacity:1;transform:none}}
+
+/* ═══════════════ MODAL ═══════════════ */
+#modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:1000;align-items:center;justify-content:center;padding:18px;backdrop-filter:blur(6px)}
+#modal-overlay.active{display:flex}
+.modal-box{
+  background:var(--card);border-radius:10px;
+  border:2px solid var(--border);
+  box-shadow:0 8px 0 rgba(0,0,0,.6),0 0 40px rgba(191,95,255,.1);
+  padding:22px;width:100%;max-width:380px;
+  animation:screenIn .2s ease;
+}
+.modal-title{font-family:var(--font-pixel);font-size:.8rem;letter-spacing:1px;margin-bottom:12px;line-height:1.6;color:var(--y)}
+.modal-btns{display:flex;gap:10px;margin-top:16px}
+
+/* ═══════════════ CONFETTI ═══════════════ */
+.confetti-p{position:fixed;pointer-events:none;z-index:9998;border-radius:2px;animation:cFall linear forwards}
+@keyframes cFall{0%{transform:translateY(-5vh) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+
+/* ═══════════════ ONLINE CSS ═══════════════ */
+#screen-mode{align-items:center;justify-content:center;text-align:center;background:var(--bg)}
+.mode-wrap{width:100%;max-width:400px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.mode-title{font-family:var(--font-pixel);font-size:.9rem;letter-spacing:2px;margin-bottom:4px;color:var(--y);line-height:1.6}
+.mode-card{
+  background:var(--card);border-radius:8px;padding:20px 16px;width:100%;
+  cursor:pointer;transition:var(--tr);border:2px solid var(--border);text-align:left;
+  position:relative;overflow:hidden;
+  box-shadow:0 5px 0 rgba(0,0,0,.5);
+}
+.mode-card:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.5)}
+.mode-card.mc-off{border-color:rgba(255,34,85,.3)}
+.mode-card.mc-on{border-color:rgba(0,238,255,.3)}
+.mode-card-icon{font-size:1.8rem;margin-bottom:6px;display:block}
+.mode-card-name{font-family:var(--font-pixel);font-size:.7rem;letter-spacing:1px;margin-bottom:6px;line-height:1.6}
+.mc-off .mode-card-name{color:var(--r)}.mc-on .mode-card-name{color:var(--b)}
+.mode-card-desc{font-size:.78rem;color:var(--text2);line-height:1.6}
+.mode-new-badge{position:absolute;top:10px;right:10px;background:var(--b);color:#000;font-size:.5rem;font-weight:900;padding:2px 8px;border-radius:3px;letter-spacing:.5px;font-family:var(--font-pixel)}
+#screen-ol-host{align-items:stretch}
+.room-code-box{background:var(--bg3);border:2px dashed rgba(0,238,255,.3);border-radius:8px;padding:18px;text-align:center;margin:8px 0}
+.room-code-big{font-family:var(--font-pixel);font-size:2.8rem;letter-spacing:8px;color:var(--b);text-shadow:0 0 20px rgba(0,238,255,.5)}
+.ol-player-row{display:flex;align-items:center;gap:10px;background:var(--bg3);border-radius:6px;border:2px solid var(--border);padding:9px 12px;margin-bottom:6px}
+.ol-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.ol-dot.green{background:var(--g);box-shadow:0 0 6px var(--g)}
+.ol-dot.gray{background:var(--text2)}
+.ol-dot.pulse{animation:olPulse 1s step-end infinite}
+@keyframes olPulse{0%,100%{opacity:1}50%{opacity:.2}}
+.sync-bar{display:flex;align-items:center;gap:8px;background:var(--bg3);border-radius:6px;padding:6px 11px;font-size:.6rem;color:var(--text2);border:2px solid var(--border);margin-bottom:9px;font-family:var(--font-pixel)}
+#screen-ol-join{align-items:stretch}
+.code-input{font-family:var(--font-pixel);font-size:1.6rem;letter-spacing:6px;text-align:center;text-transform:uppercase}
+#screen-ol-wait{align-items:center;justify-content:center;text-align:center}
+.wait-bounce{font-size:2.5rem;animation:wb .8s ease-in-out infinite alternate}
+@keyframes wb{from{transform:translateY(0) scale(1)}to{transform:translateY(-12px) scale(1.1)}}
+#screen-ol-card{align-items:center;justify-content:center}
+#screen-ol-game{align-items:stretch}
+.phase-bar{background:rgba(255,230,0,.06);border:2px solid rgba(255,230,0,.18);border-radius:6px;padding:8px 12px;font-size:.55rem;color:var(--y);font-weight:700;text-align:center;margin-bottom:9px;font-family:var(--font-pixel);line-height:1.6}
+.vote-sent-msg{background:rgba(0,255,136,.07);border:2px solid rgba(0,255,136,.2);border-radius:6px;padding:8px 12px;font-size:.72rem;color:var(--g);text-align:center;display:none;margin-top:8px}
+.vote-sent-msg.show{display:block}
+.tally-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border-radius:5px;padding:8px 12px;margin-bottom:5px;border:2px solid var(--border)}
+.tally-row.top{border-color:var(--r);background:rgba(255,34,85,.07)}
+.tally-bar-wrap{flex:1;margin:0 10px;height:6px;background:rgba(255,255,255,.07);border-radius:2px;overflow:hidden}
+.tally-bar{height:100%;background:var(--r);border-radius:2px;transition:.4s}
+
+/* ═══════════════ UTILS ═══════════════ */
+.spacer{flex:1}.mt8{margin-top:8px}.mt10{margin-top:10px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt20{margin-top:20px}
+.mb8{margin-bottom:8px}.mb12{margin-bottom:12px}
+.flex-col{display:flex;flex-direction:column;gap:9px}
+.text-center{text-align:center}
+.add-player-row{margin-top:6px}
+.highlight{color:var(--y);font-weight:900}
+.safe-bottom{padding-bottom:max(12px,env(safe-area-inset-bottom))}
+
+/* ── FOOTER COPYRIGHT ── */
+.footer-copy{
+  position:fixed;bottom:0;left:0;right:0;z-index:500;
+  text-align:center;padding:4px 0 max(6px,env(safe-area-inset-bottom));
+  font-family:var(--font-pixel);font-size:.38rem;color:rgba(100,120,255,.25);
+  letter-spacing:1.5px;pointer-events:none;
+  background:linear-gradient(transparent,rgba(4,4,12,.6));
+}
+</style>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <!-- Discord Embedded App SDK -->
+  <script src="https://cdn.discordapp.com/activities/sdk.js"></script>
+</head>
+<body>
+<div class="pixel-grid"></div>
+<div id="toast-container"></div>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-title" id="modal-title"></div>
+    <div id="modal-body"></div>
+    <div class="modal-btns" id="modal-btns"></div>
+  </div>
+</div>
+
+<!-- HOME -->
+<div class="screen active" id="screen-home">
+  <div class="pixel-bg-chars" id="pixel-bg-chars"></div>
+  <div class="home-inner">
+
+    <!-- LOGO pixel art SVG -->
+    <div class="home-logo-wrap">
+      <svg class="home-logo-svg" viewBox="0 0 320 110" xmlns="http://www.w3.org/2000/svg" style="image-rendering:pixelated">
+        <defs>
+          <linearGradient id="lg1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ff2255"/>
+            <stop offset="40%" stop-color="#ff8800"/>
+            <stop offset="100%" stop-color="#ffe600"/>
+          </linearGradient>
+          <linearGradient id="lg2" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#bf5fff"/>
+            <stop offset="100%" stop-color="#00eeff"/>
+          </linearGradient>
+          <filter id="glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <!-- Shadow -->
+        <text x="163" y="58" text-anchor="middle" font-family="'Russo One',Impact,sans-serif" font-size="52" fill="rgba(0,0,0,.6)" letter-spacing="4">IMPOSTOR</text>
+        <text x="163" y="105" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="22" fill="rgba(0,0,0,.6)" letter-spacing="2">LEAGUE</text>
+        <!-- Main text -->
+        <text x="160" y="55" text-anchor="middle" font-family="'Russo One',Impact,sans-serif" font-size="52" fill="url(#lg1)" letter-spacing="4" filter="url(#glow)">IMPOSTOR</text>
+        <text x="160" y="102" text-anchor="middle" font-family="'Press Start 2P',monospace" font-size="22" fill="url(#lg2)" letter-spacing="2" filter="url(#glow)">LEAGUE</text>
+        <!-- Pixel decoration dots -->
+        <rect x="8" y="42" width="6" height="6" fill="#ff2255" opacity=".8"/>
+        <rect x="16" y="42" width="6" height="6" fill="#ff2255" opacity=".4"/>
+        <rect x="298" y="42" width="6" height="6" fill="#ffe600" opacity=".8"/>
+        <rect x="306" y="42" width="6" height="6" fill="#ffe600" opacity=".4"/>
+        <!-- Underline pixel -->
+        <rect x="60" y="108" width="200" height="3" fill="url(#lg1)" opacity=".6"/>
+      </svg>
+    </div>
+
+    <div class="home-subtitle">— POP CULTURE EDITION —</div>
+
+    <div class="home-tags">
+      <span class="home-tag r">⚔️ Animé</span>
+      <span class="home-tag b">🎬 Films</span>
+      <span class="home-tag y">📺 Séries</span>
+      <span class="home-tag g">🦸 Super-héros</span>
+      <span class="home-tag p">🌌 Sci-Fi</span>
+    </div>
+
+    <div class="speech-bubble">👾 QUI EST L'IMPOSTEUR ?</div>
+
+    <div class="home-desc">
+      Chaque joueur reçoit un personnage secret. Décrivez <b>sans nommer</b>.
+      Débusquez les <b style="color:var(--r)">Imposteurs</b> avant qu'ils ne vous éliminent !
+    </div>
+
+    <div class="home-btns safe-bottom">
+      <button class="btn btn-primary ripple" onclick="showScreen('screen-mode');SFX.click()" style="font-size:1rem;font-family:var(--font-pixel);font-size:.7rem;letter-spacing:1px;padding:18px">▶ JOUER</button>
+      <button class="btn btn-ghost" onclick="showRules();SFX.click()" style="font-family:var(--font-pixel);font-size:.55rem;letter-spacing:1px">📖 RÈGLES</button>
+    </div>
+  </div>
+</div>
+
+<!-- SETUP -->
+<div class="screen" id="screen-setup">
+  <div style="padding:12px 0 6px;display:flex;align-items:center;gap:10px">
+    <button class="btn btn-ghost btn-sm" style="width:auto" onclick="showScreen('screen-home')">←</button>
+    <div style="font-family:var(--font-h);font-size:1.8rem;letter-spacing:2px">CONFIGURATION</div>
+  </div>
+  <div class="scroll-area">
+    <div class="section-label mt12">👥 joueurs</div>
+    <div class="players-list" id="players-list"></div>
+    <div class="add-player-row">
+      <button class="btn btn-ghost btn-sm" onclick="addPlayer()" id="btn-add-player">＋ Ajouter un joueur</button>
+    </div>
+    <div class="divider"></div>
+    <div class="section-label">🎭 rôles spéciaux</div>
+    <div class="roles-grid">
+      <div class="role-box">
+        <div class="role-box-label">🔴 Undercover</div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="changeRole('undercover',-1)">−</button>
+          <div class="role-val" id="val-undercover">1</div>
+          <button class="stepper-btn" onclick="changeRole('undercover',1)">+</button>
+        </div>
+      </div>
+      <div class="role-box">
+        <div class="role-box-label">⬜ Mr White</div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="changeRole('mrwhite',-1)">−</button>
+          <div class="role-val" id="val-mrwhite">0</div>
+          <button class="stepper-btn" onclick="changeRole('mrwhite',1)">+</button>
+        </div>
+      </div>
+    </div>
+    <div id="roles-error" class="error-msg">❌ Trop de rôles spéciaux pour ce nombre de joueurs.</div>
+    <div class="info-row mt8"><span>ℹ️</span><span id="roles-info">1 undercover · 0 mr white</span></div>
+    <div class="divider"></div>
+    <div class="section-label">📚 catégories</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="selectAllCats()">Tout ✓</button>
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="selectNoCats()">Rien ✕</button>
+    </div>
+    <div id="categories-container"></div>
+    <div id="cats-error" class="error-msg">❌ Sélectionnez au moins une catégorie.</div>
+    <div class="divider"></div>
+    <div class="flex-col safe-bottom">
+      <button class="btn btn-primary" onclick="startGame()">🚀 LANCER LA PARTIE</button>
+    </div>
+  </div>
+</div>
+
+<!-- DISTRIBUTION -->
+<div class="screen" id="screen-distribution">
+  <div class="dist-header">
+    <div class="dist-round-pill" id="dist-round-pill">DISTRIBUTION DES RÔLES</div>
+    <div class="dist-progress" id="dist-progress"></div>
+  </div>
+  <div class="dist-card">
+    <div class="dist-player-avatar" id="dist-avatar">?</div>
+    <div class="dist-player-name" id="dist-player-name">Joueur</div>
+    <div class="dist-instruction">Passe l'écran à ce joueur, seul. Ne montre pas aux autres !</div>
+    <div class="secret-card blurred" id="secret-card" onclick="doReveal()">
+      <div class="secret-role-tag" id="secret-role-tag">🎭 TON PERSONNAGE</div>
+      <div class="secret-character" id="secret-character">???</div>
+      <div class="reveal-tap-hint">👆 Appuie pour révéler</div>
+    </div>
+    <div class="reveal-actions" id="reveal-actions">
+      <div style="font-size:.78rem;color:var(--text2);text-align:center">✅ Mémorise bien ton personnage, puis cache l'écran !</div>
+      <button class="btn btn-success" onclick="nextDist()">Cacher &amp; Passer →</button>
+    </div>
+    <div id="reveal-btn-wrap">
+      <button class="btn btn-secondary" onclick="doReveal()" id="btn-reveal-main">👁 Voir mon personnage</button>
+    </div>
+  </div>
+</div>
+
+<!-- GAME -->
+<!-- GAME — TOUR DE PAROLE avec chrono -->
+<div class="screen" id="screen-game">
+  <div class="game-topbar">
+    <div class="game-round-badge" id="game-round-badge">TOUR 1</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="game-alive-count" id="game-alive-count">— joueurs</div>
+      <button class="btn btn-danger btn-sm" style="width:auto;padding:6px 12px" onclick="confirmEnd()">⏹</button>
+    </div>
+  </div>
+  <div class="divider" style="margin:0 0 10px"></div>
+
+  <!-- Joueur actuel + chrono -->
+  <div class="current-speaker-card" id="current-speaker-card">
+    <div class="cs-label">C'est au tour de</div>
+    <div class="cs-name" id="cs-name">-</div>
+    <div class="cs-chrono-wrap">
+      <svg class="cs-ring" viewBox="0 0 80 80">
+        <circle class="cs-ring-bg" cx="40" cy="40" r="34"/>
+        <circle class="cs-ring-bar" id="cs-ring-bar" cx="40" cy="40" r="34"/>
+      </svg>
+      <div class="cs-time" id="cs-time">60</div>
+    </div>
+    <div id="cs-start-wrap">
+      <button class="btn btn-primary" id="btn-cs-start" onclick="csStart()">▶ START</button>
+    </div>
+    <div id="cs-pass-wrap" style="display:none">
+      <button class="btn btn-success" onclick="csPass()">✅ J'ai parlé — PASS →</button>
+    </div>
+    <div class="cs-progress" id="cs-progress"></div>
+  </div>
+
+  <!-- Liste des joueurs du tour -->
+  <div class="speaking-list mt10" id="speaking-list"></div>
+  <div class="spacer"></div>
+
+  <!-- Fin de tour : voter ou pas ? -->
+  <div id="end-of-round-wrap" style="display:none">
+    <div class="divider"></div>
+    <div style="text-align:center;margin-bottom:12px">
+      <div style="font-family:var(--font-h);font-size:1.6rem;letter-spacing:2px;color:var(--y)">FIN DU TOUR !</div>
+      <div style="font-size:.82rem;color:var(--text2);margin-top:4px">Vous voulez voter pour éliminer quelqu'un ?</div>
+    </div>
+    <div class="flex-col safe-bottom">
+      <button class="btn btn-primary" onclick="goToVote()">🗳️ OUI — VOTER</button>
+      <button class="btn btn-ghost" onclick="skipVote()">⏭ NON — Rejouer un tour</button>
+    </div>
+  </div>
+</div>
+
+<!-- VOTE -->
+<div class="screen" id="screen-vote">
+  <div class="vote-header">
+    <div class="vote-title" id="vote-title-label">VOTE</div>
+    <div class="vote-subtitle" id="vote-subtitle">Tour 1 · Éliminez le plus suspect</div>
+  </div>
+  <div class="divider" style="margin-top:0"></div>
+  <div style="font-size:.82rem;color:var(--text2);margin-bottom:10px;text-align:center">
+    Appuyez sur le nom du joueur que vous pensez être l'imposteur
+  </div>
+  <div class="vote-list" id="vote-list"></div>
+  <div id="vote-error" class="error-msg">❌ Sélectionnez un joueur.</div>
+  <div class="spacer"></div>
+  <div class="flex-col safe-bottom mt12">
+    <button class="btn btn-primary" onclick="confirmVote()">⚡ ÉLIMINER CE JOUEUR</button>
+    <button class="btn btn-ghost" onclick="backToGame()">← Retour</button>
+  </div>
+</div>
+
+<!-- ELIMINATION -->
+<div class="screen" id="screen-elimination">
+  <div style="padding:12px 0 10px;font-family:var(--font-h);font-size:1.8rem;letter-spacing:2px">ÉLIMINÉ !</div>
+  <div class="divider" style="margin-top:0"></div>
+  <div class="elim-splash" id="elim-splash">
+    <span class="elim-big-emoji" id="elim-emoji">💀</span>
+    <div class="elim-was">Le joueur éliminé est</div>
+    <div class="elim-player-name" id="elim-name">?</div>
+    <div class="elim-role-label" id="elim-role">?</div>
+    <div class="elim-word-reveal" id="elim-word"></div>
+  </div>
+  <div class="info-row" id="elim-info"></div>
+  <div class="spacer"></div>
+  <div class="flex-col safe-bottom mt12">
+    <button class="btn btn-primary" id="btn-elim-continue">Continuer →</button>
+  </div>
+</div>
+
+<!-- MR WHITE GUESS -->
+<div class="screen" id="screen-mrwhite">
+  <div style="padding:12px 0 10px;font-family:var(--font-h);font-size:1.8rem;letter-spacing:2px">CHANCE FINALE</div>
+  <div class="divider" style="margin-top:0"></div>
+  <div class="mrw-card">
+    <div style="font-size:3rem">🤍</div>
+    <div class="mrw-name" id="mrw-player-name">?</div>
+    <div style="font-size:.88rem;color:var(--text2);line-height:1.7;margin-top:8px">
+      Mr White a été éliminé !<br>Devine le personnage des civils pour gagner.
+    </div>
+    <div class="mt16">
+      <label>Ton estimation :</label>
+      <input type="text" id="mrw-input" placeholder="Nom du personnage..." maxlength="60">
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="flex-col safe-bottom mt12">
+    <button class="btn btn-primary" onclick="checkMrWhite()">🎯 VALIDER</button>
+  </div>
+</div>
+
+<!-- VICTORY -->
+<div class="screen" id="screen-victory">
+  <div class="victory-inner">
+    <div class="victory-stamp" id="v-emoji">🏆</div>
+    <div class="victory-title" id="v-title">VICTOIRE !</div>
+    <div class="victory-sub" id="v-sub"></div>
+    <div class="card" style="width:100%;margin-bottom:14px;text-align:left">
+      <div class="section-label" style="margin-bottom:8px">🔍 mots de la partie</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:.72rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px">Civils</div>
+          <div style="font-weight:900;color:var(--g);font-size:1rem" id="v-civil-word">—</div>
+        </div>
+        <div>
+          <div style="font-size:.72rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px">Undercover</div>
+          <div style="font-weight:900;color:var(--r);font-size:1rem" id="v-under-word">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="recap-list" id="recap-list"></div>
+    <div style="width:100%" class="flex-col safe-bottom">
+      <div id="victory-btns-online" style="display:none;flex-direction:column;gap:9px;width:100%">
+        <div id="victory-host-btns" style="display:none">
+          <button class="btn btn-primary" onclick="onRejouer()">🔄 RELANCER UNE PARTIE</button>
+        </div>
+        <div id="victory-player-btns" style="display:none">
+          <button class="btn btn-secondary" disabled>⏳ En attente de l'hôte…</button>
+        </div>
+        <button class="btn btn-ghost" onclick="onAccueil()">🚪 Quitter la room</button>
+      </div>
+      <div id="victory-btns-offline" style="width:100%;display:flex;flex-direction:column;gap:9px">
+        <button class="btn btn-primary" onclick="onRejouer()">🔄 REJOUER</button>
+        <button class="btn btn-ghost" onclick="onAccueil()">🏠 Accueil</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════
+// BASE DE DONNÉES
+// ══════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════════════
+// SFX — Web Audio API (pas besoin de fichiers externes)
+// ══════════════════════════════════════════════════════════════════════
+let _sfxCtx = null;
+
+function sfxCtx(){
+  if(!_sfxCtx) _sfxCtx = new (window.AudioContext||window.webkitAudioContext)();
+  if(_sfxCtx.state==='suspended') _sfxCtx.resume();
+  return _sfxCtx;
+}
+
+function sfxTone(freq, type='sine', vol=0.3, dur=0.15, delay=0){
+  try{
+    const ctx  = sfxCtx();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime+delay);
+    gain.gain.setValueAtTime(0, ctx.currentTime+delay);
+    gain.gain.linearRampToValueAtTime(vol, ctx.currentTime+delay+0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+delay+dur);
+    osc.start(ctx.currentTime+delay);
+    osc.stop(ctx.currentTime+delay+dur+0.05);
+  } catch(e){}
+}
+
+function sfxNoise(vol=0.15, dur=0.08, delay=0){
+  try{
+    const ctx    = sfxCtx();
+    const buf    = ctx.createBuffer(1, ctx.sampleRate*0.2, ctx.sampleRate);
+    const data   = buf.getChannelData(0);
+    for(let i=0;i<data.length;i++) data[i]=(Math.random()*2-1);
+    const src    = ctx.createBufferSource();
+    const gain   = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+    filter.type  = 'bandpass';
+    filter.frequency.value = 1200;
+    src.buffer   = buf;
+    src.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(vol, ctx.currentTime+delay);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+delay+dur);
+    src.start(ctx.currentTime+delay);
+    src.stop(ctx.currentTime+delay+dur+0.05);
+  } catch(e){}
+}
+
+// Sons du jeu
+const SFX = {
+  // Clic bouton générique
+  click(){ sfxTone(600,'sine',0.12,0.06); },
+
+  // Révéler sa carte
+  reveal(){
+    sfxTone(400,'sine',0.15,0.12,0);
+    sfxTone(600,'sine',0.15,0.12,0.08);
+    sfxTone(900,'sine',0.2,0.2,0.16);
+  },
+
+  // START chrono
+  start(){
+    sfxTone(500,'square',0.08,0.06,0);
+    sfxTone(800,'square',0.12,0.1,0.07);
+  },
+
+  // PASS — tour suivant
+  pass(){
+    sfxTone(700,'sine',0.15,0.08,0);
+    sfxTone(1000,'sine',0.1,0.1,0.09);
+  },
+
+  // Chrono — chaque seconde (discret)
+  tick(){ sfxTone(880,'sine',0.04,0.04); },
+
+  // Alerte 10 dernières secondes
+  tickWarn(){ sfxTone(660,'square',0.07,0.05); },
+
+  // Temps écoulé !
+  timesUp(){
+    sfxTone(300,'sawtooth',0.2,0.1,0);
+    sfxTone(200,'sawtooth',0.2,0.15,0.1);
+    sfxNoise(0.3,0.15,0.08);
+  },
+
+  // Vote sélectionné
+  vote(){ sfxTone(440,'sine',0.1,0.08); },
+
+  // Vote confirmé
+  voteConfirm(){
+    sfxTone(500,'sine',0.12,0.06,0);
+    sfxTone(750,'sine',0.15,0.1,0.07);
+  },
+
+  // Élimination
+  elim(){
+    sfxNoise(0.25,0.1,0);
+    sfxTone(200,'sawtooth',0.2,0.3,0.05);
+    sfxTone(100,'sawtooth',0.15,0.4,0.2);
+  },
+
+  // Civil éliminé (bad)
+  elimCivil(){
+    sfxTone(400,'sine',0.15,0.1,0);
+    sfxTone(300,'sine',0.15,0.15,0.1);
+    sfxTone(200,'sine',0.12,0.25,0.2);
+  },
+
+  // Undercover éliminé (good)
+  elimUnder(){
+    sfxTone(500,'sine',0.12,0.08,0);
+    sfxTone(700,'sine',0.15,0.08,0.09);
+    sfxTone(1000,'sine',0.18,0.15,0.18);
+  },
+
+  // Victoire
+  victory(){
+    [0,0.12,0.24,0.36,0.48].forEach((d,i)=>{
+      sfxTone([500,600,700,900,1200][i],'sine',0.18,0.2,d);
+    });
+  },
+
+  // Défaite
+  defeat(){
+    sfxTone(400,'sawtooth',0.15,0.2,0);
+    sfxTone(300,'sawtooth',0.15,0.25,0.2);
+    sfxTone(200,'sawtooth',0.12,0.3,0.4);
+  },
+
+  // Connexion / room créée
+  connect(){
+    sfxTone(600,'sine',0.1,0.08,0);
+    sfxTone(900,'sine',0.12,0.12,0.09);
+  },
+
+  // Erreur
+  error(){ sfxTone(200,'square',0.12,0.15); },
+
+  // Fin de tour
+  roundEnd(){
+    sfxTone(600,'sine',0.1,0.08,0);
+    sfxTone(700,'sine',0.12,0.1,0.09);
+    sfxTone(800,'sine',0.1,0.08,0.19);
+  },
+
+  // Nouvelle partie lancée
+  gameStart(){
+    sfxTone(300,'sine',0.1,0.08,0);
+    sfxTone(500,'sine',0.15,0.1,0.1);
+    sfxTone(700,'sine',0.2,0.15,0.2);
+    sfxTone(1000,'sine',0.18,0.2,0.35);
+  },
+
+  // Joueur connecté à la room
+  playerJoin(){
+    sfxTone(800,'sine',0.12,0.06,0);
+    sfxTone(1100,'sine',0.1,0.08,0.07);
+  },
+
+  // Compte à rebours final (3,2,1)
+  countdown(){
+    sfxTone(880,'square',0.15,0.1);
+  },
+};
+
+const DB = {
+
+  // ═══════════════════════════════
+  // ANIMÉ
+  // ═══════════════════════════════
+
+  "One Piece": [
+    ["Luffy","Naruto"],                        // héros shonen solaires, même énergie
+    ["Luffy","Goku"],                          // naïfs surpuissants qui mangent tout
+    ["Zoro","Levi Ackerman"],                  // épéistes silencieux, bras droit
+    ["Zoro","Sasuke"],                         // rivaux froids à l'ambition blessée
+    ["Ace","Rengoku"],                         // feu, panache, meurent tragiquement
+    ["Shanks","Whitebeard"],                   // empereurs bienveillants à équipages
+    ["Mihawk","Zoro"],                         // maître et élève épéistes légendaires
+    ["Kaido","Broly"],                         // invincibles berserkers alcoolisés
+    ["Nami","Mikasa Ackerman"],                // filles badass indispensables à l'équipage
+    ["Robin","Rukia"],                         // femmes mystérieuses passé sombre
+    ["Doflamingo","Aizen"],                    // manipulateurs souriants en costume
+    ["Sanji","Rock Lee"],                      // combattants jambes, jamais les mains
+    ["Law","Sasuke"],                          // cool boys tatoués, ambition vengeance
+    ["Luffy","Tanjiro"],                       // héros gentils qui protègent les proches
+    ["Big Mom","Kaguya"],                      // matriarches surpuissantes terrifiantes
+    ["Garp","Netero"],                         // vieux géants humbles et ultra puissants
+  ],
+
+  "Naruto": [
+    ["Naruto","Luffy"],                        // même énergie folle, rêve de chef
+    ["Naruto","Deku"],                         // héros sous-estimés, mentors légendaires
+    ["Naruto","Goku"],                         // blonds naïfs qui surpassent tout le monde
+    ["Sasuke","Zuko"],                         // fils rebelles à la cicatrice, côté obscur
+    ["Sasuke","Levi Ackerman"],                // froids, efficaces, portent tout seuls
+    ["Itachi","Aizen"],                        // génies qui jouaient un double jeu
+    ["Kakashi","Byakuya"],                     // capitaines distants aux cheveux blancs
+    ["Pain","Thanos"],                         // villains idéologiques, éliminer pour sauver
+    ["Madara","All For One"],                  // boss final qui tire les ficelles dans l'ombre
+    ["Jiraiya","All Might"],                   // mentors puissants qui meurent en héros
+    ["Orochimaru","Aizen"],                    // scientifiques serpents manipulateurs
+    ["Rock Lee","Might Guy"],                  // taijutsu, sourcils, passion brûlante
+    ["Gaara","Kaneki Ken"],                    // orphelins monstres rédempteurs
+    ["Shikamaru","L"],                         // génies stratèges qui bâillent tout le temps
+    ["Hinata","Ochaco"],                       // filles timides amoureuses du héros
+  ],
+
+  "Jujutsu Kaisen": [
+    ["Gojo","Aizen"],                          // surpuissants qui s'ennuient de dominer
+    ["Gojo","All Might"],                      // piliers souriants qui portent tout un système
+    ["Sukuna","Madara"],                       // rois ancestraux invincibles revenus
+    ["Sukuna","Muzan"],                        // boss démons aux formes multiples
+    ["Yuji","Tanjiro"],                        // gentils gars qui portent un monstre en eux
+    ["Yuji","Naruto"],                         // héros positifs porteurs d'une malédiction
+    ["Megumi","Sasuke"],                       // sombres, pragmatiques, famille blessée
+    ["Mahito","Dabi"],                         // vilains nihilistes qui jouissent du chaos
+    ["Nobara","Maki Zenin"],                   // filles brutes sans complexe
+    ["Kenjaku","Orochimaru"],                  // savants immortels qui changent de corps
+    ["Yuta","Ichigo"],                         // puissance extraordinaire venue de l'amour
+    ["Toji","Levi Ackerman"],                  // sans chakra/nen mais surpassent tous les autres
+  ],
+
+  "Dragon Ball": [
+    ["Goku","Naruto"],                         // héros positifs qui veulent juste se battre
+    ["Goku","Luffy"],                          // naïfs surpuissants, mangeurs légendaires
+    ["Goku","Saitama"],                        // combattants qui cherchent un vrai défi
+    ["Goku","Superman"],                       // aliens bienveillants quasi invincibles
+    ["Vegeta","Sasuke"],                       // orgueilleux rivaux qui dépassent leur côté obscur
+    ["Vegeta","Homelander"],                   // ego démesuré, sentiment de supériorité de race
+    ["Broly","Hulk"],                          // colosses verts berserkers incontrôlables
+    ["Broly","Kaido"],                         // invincibles en colère, tout détruire
+    ["Frieza","Thanos"],                       // tyrans galactiques obsédés par la puissance
+    ["Beerus","Homelander"],                   // dieux imprévisibles qui tuent par caprice
+    ["Gohan","Deku"],                          // fils de héros qui refusent leur destin puis l'embrassent
+    ["Piccolo","Kakashi"],                     // mentors verts/masqués qui forment le fils du héros
+    ["Vegito","Gogeta"],                       // fusions des mêmes guerriers, styles différents
+    ["Zamasu","Light Yagami"],                 // dieux autoproclamés qui punissent les humains
+    ["Krillin","Rock Lee"],                    // humains dépassés qui se battent quand même
+  ],
+
+  "My Hero Academia": [
+    ["Deku","Naruto"],                         // sans pouvoir au départ, héros par volonté
+    ["Deku","Peter Parker"],                   // lycéens maladroits aux grands pouvoirs
+    ["All Might","Superman"],                  // symbole d'espoir au sourire indestructible
+    ["All Might","Jiraiya"],                   // mentors qui sacrifient tout pour l'élève
+    ["Bakugo","Vegeta"],                       // orgueil explosif, rival du héros
+    ["Bakugo","Inosuke"],                      // agressifs hurleurs qui s'améliorent malgré eux
+    ["Shoto Todoroki","Zuko"],                 // fils de puissants, feu et glace, père distant
+    ["Endeavor","Vegeta"],                     // pères froids obsédés par la supériorité
+    ["Toga","Harley Quinn"],                   // folles amoureuses du chaos, lames et sourires
+    ["Stain","Magneto"],                       // vilains avec une vraie idéologie pure
+    ["Dabi","Mahito"],                         // vilains nihilistes blessés qui brûlent tout
+    ["Aizawa","Kakashi"],                      // profs badass qui font semblant de s'en foutre
+    ["Hawks","Itachi"],                        // espions au service d'un système qu'ils détestent
+  ],
+
+  "Hunter x Hunter": [
+    ["Gon","Luffy"],                           // fous positifs qui s'attirent les forts
+    ["Gon","Naruto"],                          // héros ronds émotionnellement explosifs
+    ["Killua","Sasuke"],                       // assassins famille sombre, meilleur ami du héros
+    ["Hisoka","Joker"],                        // fous du combat, maquillage, imprévisibles
+    ["Hisoka","Deadpool"],                     // violents drôles qui cassent le quatrième mur
+    ["Chrollo","Aizen"],                       // chefs charismatiques aux plans incompréhensibles
+    ["Meruem","Light Yagami"],                 // génies qui méprisent les humains puis changent
+    ["Netero","Yoda"],                         // petits vieux espiègles aux pouvoirs absolus
+    ["Kurapika","Sasuke"],                     // survivants d'un clan, vengeance obsessionnelle
+    ["Illumi","Itachi"],                       // grands frères qui ont brisé leur cadet
+    ["Bisky","Tsunade"],                       // femmes puissantes qui font semblant d'être faibles
+  ],
+
+  "Bleach": [
+    ["Ichigo","Deku"],                         // ados ordinaires propulsés dans un monde de fous
+    ["Ichigo","Yuji Itadori"],                 // corps partagé avec un monstre ancien
+    ["Aizen","Gojo"],                          // invincibles qui manipulent la perception
+    ["Aizen","Light Yagami"],                  // génies froids au plan depuis le début
+    ["Kenpachi","Broly"],                      // guerriers purs qui vivent pour tuer
+    ["Byakuya","Itachi"],                      // nobles froids aux cheveux noirs, clan
+    ["Yhwach","Madara"],                       // ancêtres divins omniscients qui reviennent
+    ["Urahara","Kakashi"],                     // mentors excentriques cachant une vraie puissance
+    ["Rukia","Mikasa Ackerman"],               // filles petites mais redoutables, loyauté absolue
+    ["Grimmjow","Bakugo"],                     // agressifs bleus qui veulent se battre pour de vrai
+  ],
+
+  "Death Note": [
+    ["Light Yagami","Aizen"],                  // génies qui se croient des dieux
+    ["Light Yagami","Walter White"],           // hommes ordinaires corrompus par le pouvoir
+    ["Light Yagami","Meruem"],                 // intelligences froides qui méprisent l'humanité
+    ["L","Shikamaru"],                         // détectives à la posture bizarre, génie pur
+    ["L","Near"],                              // successeurs détectives au même style
+    ["Ryuk","Joker"],                          // catalyseurs du chaos qui regardent en rigolant
+    ["Misa","Toga Himiko"],                    // fan obsessionnelle amoureuse folle
+    ["Light","Lelouch vi Britannia"],          // lycéens géniaux qui veulent refaire le monde
+  ],
+
+  "Demon Slayer": [
+    ["Tanjiro","Yuji Itadori"],               // doux porteurs d'un monstre, protègent leur sœur
+    ["Tanjiro","Luffy"],                       // héros qui pleurent et sourient autant
+    ["Rengoku","Ace"],                         // feu, panache, mort sacrificielle marquante
+    ["Zenitsu","Mineta"],                      // lâches comiques aux moments clés
+    ["Inosuke","Bakugo"],                      // agressifs hurleurs qui apprennent en se battant
+    ["Muzan","Aizen"],                         // boss qui changent de forme, toujours en avance
+    ["Muzan","Voldemort"],                     // immortels qui craignent la mort par-dessus tout
+    ["Doma","Mahito"],                         // vilains vides d'empathie qui sourient toujours
+    ["Yoriichi","Gojo"],                       // guerriers d'une autre époque hors catégorie
+    ["Akaza","Rengoku"],                       // miroir opposé, même force, philosophies inverses
+  ],
+
+  "Attaque des Titans": [
+    ["Eren","Kaneki Ken"],                     // gentils transformés en monstres par la souffrance
+    ["Eren","Shinji Ikari"],                   // héros traumatisés qui deviennent ce qu'ils haïssaient
+    ["Levi","Zoro"],                           // meilleurs combattants de leur monde, froids
+    ["Levi","Mikasa Ackerman"],               // Ackermans, même sang, même fureur
+    ["Armin","Shikamaru"],                     // stratèges qui gagnent avec la tête pas les bras
+    ["Reiner","Sasuke"],                       // porteurs d'un lourd secret, craquent sous la pression
+    ["Reiner","Eren"],                         // miroirs l'un de l'autre, même fardeau
+    ["Zeke","Madara"],                         // grands-frères manipulateurs au plan de titan
+    ["Historia","Sansa Stark"],                // princesses fragiles qui deviennent reines
+    ["Hange","Bulma"],                         // scientifiques folles fascinées par les monstres
+    ["Erwin","Armin"],                         // commandants qui sacrifient tout pour la mission
+  ],
+
+  "One Punch Man": [
+    ["Saitama","Goku"],                        // cherchent un vrai adversaire depuis toujours
+    ["Saitama","All Might"],                   // héros invincibles qui portent seuls
+    ["Saitama","Superman"],                    // ultra puissants à l'aspect ordinaire
+    ["Garou","Deku"],                          // outsiders qui veulent prouver leur valeur
+    ["Garou","Reiner Braun"],                  // antagonistes qui comprennent les deux camps
+    ["Tatsumaki","Sakura Haruno"],             // filles puissantes sous-estimées à cause de leur look
+    ["Boros","Frieza"],                        // aliens conquérants qui cherchaient un défi
+    ["Bang","Yoda"],                           // vieux maîtres d'arts martiaux ultra puissants
+    ["Genos","Vegeta"],                        // second toujours à l'entraînement, jamais n°1
+  ],
+
+  "Fairy Tail": [
+    ["Natsu","Luffy"],                         // même énergie sauvage, équipage famille
+    ["Natsu","Ace"],                           // feu et panache, frères de cœur
+    ["Erza","Mikasa Ackerman"],               // guerrières blindées à la loyauté absolue
+    ["Gray","Sasuke"],                         // cool sombres sans chemise, rival du héros feu
+    ["Zeref","Light Yagami"],                  // personnages qui veulent leur propre destruction
+    ["Laxus","Vegeta"],                        // fils de, arrogants qui deviennent des alliés
+    ["Mavis","Yuki"],                          // fondatrices emprisonnées dans le temps
+  ],
+
+  "Tokyo Revengers": [
+    ["Takemichi","Naruto"],                    // losers qui refusent d'abandonner leurs amis
+    ["Takemichi","Deku"],                      // pas les plus forts mais les plus tenaces
+    ["Mikey","Luffy"],                         // chefs charismatiques qui inspirent les autres
+    ["Mikey","Hanma Shuji"],                   // imprevisibles dangereux qu on ne comprend pas
+    ["Draken","Zoro"],                         // bras droit fiable du chef, force tranquille
+    ["Draken","Katsuki Bakugo"],               // durs mais protecteurs pour qui compte
+    ["Kisaki","Light Yagami"],                 // manipulateurs froids qui tirent les ficelles
+    ["Kisaki","Aizen"],                        // intellects machiavéliques au sourire calme
+    ["Chifuyu","Killua"],                      // loyaux absolus à leur meilleur ami
+    ["Baji","Inosuke"],                        // sauvages imprévisibles au grand cœur caché
+    ["Hanma","Hisoka"],                        // fous du combat sans camp fixe
+    ["Mikey","Meruem"],                        // enfants prodigieux au pouvoir monstrueux
+    ["Kazutora","Reiner Braun"],               // antagonistes brisés par leur propre passé
+    ["Izana","Madara"],                        // rois rivaux qui veulent être reconnus
+    ["Smiley","Toga Himiko"],                  // fous qui rigolent en plein combat
+    ["Ran","Doflamingo"],                      // grands élégants sadiques qui jouent avec les autres
+    ["Rindo","Grimmjow"],                      // agressifs directs qui adorent les combats
+    ["Haruchiyo Sanzu","Dabi"],                // scarifiés fidèles à leur chef au détriment de tout
+    ["South Terano","Kaido"],                  // colosses au style brutal qui écrasent tout
+    ["Mikey","Eren Yeager"],                   // deux leaders qui basculent dans l'obscurité
+  ],
+
+  // ═══════════════════════════════
+  // COMICS & SUPER-HÉROS
+  // ═══════════════════════════════
+
+  "Marvel": [
+    ["Spider-Man","Miles Morales"],            // même araignée, quartiers différents
+    ["Peter Parker","Deku"],                   // ados maladroits responsabilité sur les épaules
+    ["Iron Man","Batman"],                     // milliardaires géniaux sans superpouvoir
+    ["Iron Man","Homelander"],                 // ego de héros qui n'aiment que se regarder
+    ["Captain America","Homelander"],          // soldats parfaits, valeurs inverses
+    ["Captain America","Soldier Boy"],         // soldats du même moule, époques différentes
+    ["Thor","Goku"],                           // dieux guerriers adorent se battre
+    ["Wolverine","Levi Ackerman"],             // petits, silencieux, lames, les meilleurs
+    ["Hulk","Broly"],                          // colossaux verts incontrôlables
+    ["Hulk","Garou"],                          // monstres de colère au fond gentils
+    ["Thanos","Madara"],                       // idéologues puissants au plan grandiose
+    ["Thanos","Frieza"],                       // tyrans galactiques obsédés par la puissance
+    ["Deadpool","Hisoka"],                     // fous drôles violents qui brisent le quatrième mur
+    ["Deadpool","Joker"],                      // chaotiques imprévisibles qui rigolent
+    ["Scarlet Witch","Tatsumaki"],             // femmes aux pouvoirs psychiques déstabilisants
+    ["Magneto","Stain"],                       // vilains avec idéologie, pas juste méchants
+    ["Venom","Ichigo"],                        // hôtes fusionnés à une entité sombre
+    ["Black Widow","Mikasa Ackerman"],         // soldates froides parfaitement entraînées
+  ],
+
+  "DC": [
+    ["Superman","Homelander"],                 // super-hommes parfaits, valeurs inverses
+    ["Superman","Goku"],                       // aliens bienveillants quasi invincibles
+    ["Superman","All Might"],                  // symboles d'espoir infaillibles
+    ["Batman","Iron Man"],                     // milliardaires géniaux sans superpouvoir
+    ["Batman","Levi Ackerman"],                // stratèges obsessionnels à la force pure
+    ["Joker","Hisoka"],                        // chaos pour le chaos, jeu mortel
+    ["Joker","Ryuk"],                          // catalyseurs du chaos qui observent en riant
+    ["The Flash","A-Train"],                   // couriers rapides, drogues différentes
+    ["Wonder Woman","Erza Scarlet"],           // guerrières en armure légendaires
+    ["Lex Luthor","Light Yagami"],             // intellects qui veulent être dieux
+    ["Deathstroke","Levi Ackerman"],           // mercenaires parfaits aux réflexes surhumains
+    ["Aquaman","The Deep"],                    // rois des mers sous-estimés, atlantiques
+    ["Shazam","Deku"],                         // gamins avec pouvoirs de dieux
+    ["Nightwing","Zoro"],                      // bras droits qui surpassent leur maître
+  ],
+
+  "The Boys": [
+    ["Homelander","Superman"],                 // mêmes pouvoirs, valeurs inversées
+    ["Homelander","Vegeta"],                   // supériorité raciale, ego blessé fragile
+    ["Homelander","All Might"],                // façade de héros, intérieur brisé
+    ["Soldier Boy","Captain America"],         // soldats dopés de la même époque, même look
+    ["Soldier Boy","Homelander"],              // pères et fils supers aux valeurs toxiques
+    ["Starlight","Captain America"],           // héros sincères étouffés par le système
+    ["Starlight","Deku"],                      // idéalistes refusant de céder à la corruption
+    ["A-Train","The Flash"],                   // coureurs rapides dopés, déclin similaire
+    ["A-Train","Quicksilver"],                 // mêmes pouvoirs de vitesse éclair
+    ["The Deep","Aquaman"],                    // rois des mers humiliés, même look
+    ["Black Noir","Batman"],                   // silencieux masqués aux capacités physiques folles
+    ["Queen Maeve","Wonder Woman"],            // guerrières puissantes étouffées par le système
+    ["Queen Maeve","Brienne de Torth"],        // femmes guerrières rejetées par leur monde
+    ["Butcher","Levi Ackerman"],               // haine des supers/titans, efficacité totale
+    ["Butcher","John Wick"],                   // hommes brisés par la perte qui tuent tout
+    ["Kimiko","Mikasa Ackerman"],              // combattantes silencieuses surpuissantes
+    ["Frenchie","Deadpool"],                   // bavards drôles violents aux répliques cultes
+    ["Ryan","Homelander"],                     // enfants de super héros écrasés par l'héritage
+  ],
+
+  // ═══════════════════════════════
+  // SÉRIES & FILMS
+  // ═══════════════════════════════
+
+  "Star Wars": [
+    ["Luke Skywalker","Harry Potter"],         // orphelins choisis par la prophétie
+    ["Anakin Skywalker","Eren Yeager"],        // héros qui basculent dans l'obscurité
+    ["Darth Vader","Sauron"],                  // masques noirs, voix profondes, empires
+    ["Darth Vader","Thanos"],                  // pères terrifiants qui veulent sauver en détruisant
+    ["Yoda","Iroh"],                           // petits vieux sages espiègles, thé et sagesse
+    ["Palpatine","Voldemort"],                 // maîtres de l'ombre qui manipulent depuis l'arrière
+    ["Mandalorian","Geralt de Riv"],           // guerriers solitaires qui adoptent un enfant
+    ["Boba Fett","Deathstroke"],               // chasseurs de primes légendaires mercenaires
+    ["Obi-Wan","Dumbledore"],                  // mentors qui meurent volontairement
+    ["Rey","Daenerys"],                        // héroïnes à la puissance héritée incontrôlable
+    ["Han Solo","Jack Sparrow"],               // contrebandiers charismatiques sans morale fixe
+    ["Ahsoka","Mikasa Ackerman"],              // protégées qui surpassent leur maître
+  ],
+
+  "Harry Potter": [
+    ["Harry Potter","Luke Skywalker"],         // orphelins choisis par la prophétie
+    ["Hermione Granger","Armin Arlert"],       // génies qui sauvent par la connaissance
+    ["Dumbledore","Gandalf"],                  // vieux mages sages aux secrets profonds
+    ["Dumbledore","Yoda"],                     // guides lumineux qui cachent leur vraie force
+    ["Voldemort","Palpatine"],                 // maîtres de l'ombre corrompus par la peur de mort
+    ["Voldemort","Muzan"],                     // immortels terrifiés par la mort
+    ["Draco Malfoy","Zuko"],                   // fils de familles puissantes au côté obscur
+    ["Sirius Black","Remus Lupin"],            // amis loyaux marqués par la trahison
+    ["Bellatrix Lestrange","Azula"],           // femmes dangereuses fanatiques de leur maître
+    ["Snape","Itachi"],                        // traîtres apparents qui sacrifient tout en secret
+    ["Neville Londubat","Rock Lee"],           // sous-estimés qui prouvent leur valeur
+  ],
+
+  "Game of Thrones": [
+    ["Jon Snow","Naruto"],                     // bâtards déterminés à prouver leur valeur
+    ["Daenerys","Eren Yeager"],                // libérateurs qui deviennent tyrans
+    ["Daenerys","Azula"],                      // reines au pouvoir du feu qui sombrent
+    ["Cersei","Lady Macbeth"],                 // reines machiavéliques qui sacrifient tout
+    ["Tyrion Lannister","L"],                  // intellects sous-estimés par leur apparence
+    ["Arya Stark","Mikasa Ackerman"],          // filles qui tuent mieux que les hommes
+    ["Arya Stark","Killua Zoldyck"],           // assassins entraînés depuis l'enfance
+    ["Joffrey Baratheon","Shigaraki"],         // enfants rois sadiques sans empathie
+    ["Littlefinger","Kisaki Tetta"],           // manipulateurs de l'ombre aux plans longs
+    ["The Hound","Levi Ackerman"],             // brutaux protecteurs à contrecœur
+    ["Jaime Lannister","Zuko"],                // anti-héros au bras perdu qui cherchent rédemption
+    ["Ramsay Bolton","Mahito"],                // sadiques purs qui infligent la souffrance
+  ],
+
+  "Breaking Bad": [
+    ["Walter White","Light Yagami"],           // hommes ordinaires qui se croient des dieux
+    ["Walter White","Macbeth"],                // hommes corrompus par l'ambition et l'orgueil
+    ["Jesse Pinkman","Naruto"],                // cœurs bons dans des mondes qui les brisent
+    ["Gus Fring","Aizen"],                     // façades parfaites cachant une froide violence
+    ["Saul Goodman","Jack Sparrow"],           // escrocs retors drôles à la loyauté floue
+    ["Lalo Salamanca","Doflamingo"],           // élégants souriants et absolument terrifiants
+    ["Mike Ehrmantraut","Levi Ackerman"],      // soldats silencieux qui font le sale boulot
+    ["Hank Schrader","Erwin Smith"],           // enquêteurs déterminés face à un mur d'obstacles
+  ],
+
+  "Films cultes": [
+    ["John Wick","Levi Ackerman"],             // meilleurs combattants de leur monde, obsessionnels
+    ["John Wick","Butcher"],                   // hommes brisés par la perte qui tuent tout
+    ["Tyler Durden","Light Yagami"],           // idéologues charismatiques qui veulent tout brûler
+    ["Joker","Ryuk"],                          // catalyseurs de chaos qui regardent en souriant
+    ["Hannibal Lecter","Aizen"],               // intellects sophistiqués qui manipulent les autres
+    ["Gandalf","Dumbledore"],                  // vieux mages barbus guides des héros
+    ["Frodo Baggins","Deku"],                  // petits normaux qui portent un fardeau énorme
+    ["Terminator","Broly"],                    // machines à tuer invulnérables sans émotion
+    ["Leonidas","Levi Ackerman"],              // guerriers ultimes qui protègent les leurs
+    ["Jack Sparrow","Luffy"],                  // pirates charismatiques imprévisibles et libres
+    ["Neo","Aang"],                            // élus qui refusent puis acceptent leur destin
+    ["Patrick Bateman","Light Yagami"],        // façades parfaites cachant une violence froide
+    ["The Terminator","Robocop"],              // machines à l'humanité effacée au service de la loi
+    ["Anton Chigurh","Hisoka"],                // tueurs philosophes qui font du hasard un jeu
+  ],
+
+  "Disney / Pixar": [
+    ["Elsa","Tatsumaki"],                      // puissantes incomprises qui s'isolent
+    ["Simba","Eren Yeager"],                   // fils du roi qui fuient puis reviennent pour tout
+    ["Maléfique","Medusa"],                    // sorcières trahies qui deviennent les vilaines
+    ["Gaston","Homelander"],                   // narcissiques puissants adorés des foules
+    ["Scar","Aizen"],                          // frères manipulateurs qui planifient dans l'ombre
+    ["Buzz Eclair","All Might"],               // héros parfaits qui découvrent leurs limites
+    ["Woody","Naruto"],                        // leaders anxieux à la loyauté absolue
+    ["Stitch","Inosuke"],                      // sauvages incompris au grand cœur caché
+    ["Moana","Daenerys"],                      // princesses choisies par leur héritage et la mer
+  ],
+
+  // ═══════════════════════════════
+  // JEUX VIDÉO
+  // ═══════════════════════════════
+
+  "Jeux Video": [
+    ["Kratos","Levi Ackerman"],                // meilleurs guerriers, voix de gravier, fils
+    ["Kratos","Guts"],                         // hommes brisés par les dieux qui tuent des dieux
+    ["Geralt de Riv","Levi Ackerman"],         // chasseurs de monstres froids aux répliques sèches
+    ["Geralt de Riv","Mandalorian"],           // guerriers solitaires avec enfant adopté
+    ["Joel","Walter White"],                   // pères qui franchissent la ligne rouge pour leur enfant
+    ["Arthur Morgan","Jon Snow"],              // hommes d'honneur rattrapés par leur passé
+    ["Cloud Strife","Sasuke"],                 // épéistes sombres à la grande épée et trauma
+    ["Sephiroth","Madara"],                    // antagonistes absolus au charisme immense
+    ["Solid Snake","Levi Ackerman"],           // soldats parfaits épuisés par trop de guerres
+    ["Master Chief","Iron Man"],               // guerriers en armure symboles de l'humanité
+    ["Link","Frodo Baggins"],                  // petits héros silencieux qui portent une quête épique
+    ["Dante","Deadpool"],                      // démonistes sarcastiques qui ne meurent jamais
+    ["Jinx","Harley Quinn"],                   // folles aux tresses bleues et chaos coloré
+    ["Vi","Levi Ackerman"],                    // combattantes poings experts sans merci
+    ["Leon Kennedy","Levi Ackerman"],          // soldats parfaits face à des monstres
+    ["Aloy","Mikasa Ackerman"],                // chasseuses déterminées dans un monde hostile
+    ["2B","Mikasa Ackerman"],                  // androïdes/soldates froides au service de leur clan
+    ["Ellie","Arya Stark"],                    // jeunes filles qui apprennent à tuer pour survivre
+  ],
+};
+
+const CATEGORIES_META = {
+  "One Piece":          {emoji:"⚓", color:"#ff9900"},
+  "Naruto":             {emoji:"🍥", color:"#ff6b6b"},
+  "Jujutsu Kaisen":     {emoji:"👁️", color:"#8b5cf6"},
+  "Dragon Ball":        {emoji:"⚡", color:"#f59e0b"},
+  "My Hero Academia":   {emoji:"💥", color:"#10b981"},
+  "Hunter x Hunter":    {emoji:"🎴", color:"#3b82f6"},
+  "Bleach":             {emoji:"⚔️", color:"#6366f1"},
+  "Death Note":         {emoji:"📓", color:"#111827"},
+  "Demon Slayer":       {emoji:"🌸", color:"#ec4899"},
+  "Attaque des Titans": {emoji:"🧱", color:"#78716c"},
+  "One Punch Man":      {emoji:"👊", color:"#eab308"},
+  "Fairy Tail":         {emoji:"✨", color:"#a78bfa"},
+  "Tokyo Revengers":    {emoji:"🪖", color:"#ef4444"},
+  "Marvel":             {emoji:"🦸", color:"#dc2626"},
+  "DC":                 {emoji:"🦇", color:"#1d4ed8"},
+  "The Boys":           {emoji:"🔴", color:"#facc15"},
+  "Star Wars":          {emoji:"🌌", color:"#4ade80"},
+  "Harry Potter":       {emoji:"🪄", color:"#7c3aed"},
+  "Game of Thrones":    {emoji:"👑", color:"#d97706"},
+  "Breaking Bad":       {emoji:"🧪", color:"#84cc16"},
+  "Films cultes":       {emoji:"🎬", color:"#f97316"},
+  "Disney / Pixar":     {emoji:"🏰", color:"#60a5fa"},
+  "Jeux Video":         {emoji:"🎮", color:"#34d399"},
+};
+
+// ══════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════
+let state = {
+  players: [],
+  numUndercover: 1,
+  numMrWhite: 0,
+  selectedCats: new Set(Object.keys(DB)),
+  // runtime
+  roles: [],          // [{name, role:'civil'|'undercover'|'mrwhite', word, alive:true}]
+  civilWord: '',
+  undercoverWord: '',
+  round: 1,
+  distIndex: 0,
+  speakingOrder: [],
+  currentSpeaker: 0,
+  votedOut: null,
+  mrwhiteEliminated: null,
+};
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+function rand(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+function shuffle(arr){ let a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function initial(name){ return (name||'?')[0].toUpperCase(); }
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+function spawnConfetti(){ confetti(); }
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function toast(msg, type=''){
+  const t=document.createElement('div');
+  t.className='toast '+(type);
+  t.textContent=msg;
+  document.getElementById('toast-container').appendChild(t);
+  setTimeout(()=>t.remove(),2800);
+}
+
+function showModal(title, body, btns){
+  document.getElementById('modal-title').innerHTML=title;
+  document.getElementById('modal-body').innerHTML=body;
+  const bc=document.getElementById('modal-btns');
+  bc.innerHTML='';
+  btns.forEach(b=>{
+    const el=document.createElement('button');
+    el.className='btn '+(b.cls||'btn-ghost');
+    el.style.flex='1';
+    el.innerHTML=b.label;
+    el.onclick=()=>{ closeModal(); b.action&&b.action(); };
+    bc.appendChild(el);
+  });
+  document.getElementById('modal-overlay').classList.add('active');
+}
+function closeModal(){ document.getElementById('modal-overlay').classList.remove('active'); }
+
+function confetti(){
+  const colors=['#ff2255','#00eeff','#ffe600','#00ff88','#bf5fff','#ff8800','#ffffff'];
+  for(let i=0;i<90;i++){
+    const p=document.createElement('div');
+    p.className='confetti-p';
+    // Pixel sizes: 4, 8, 12
+    const size=[4,8,12][Math.floor(Math.random()*3)];
+    p.style.cssText=`left:${Math.random()*100}vw;width:${size}px;height:${size}px;background:${colors[Math.floor(Math.random()*colors.length)]};animation-duration:${Math.random()*2.5+1.5}s;animation-delay:${Math.random()*1.2}s;border-radius:0;image-rendering:pixelated;`;
+    document.body.appendChild(p);
+    setTimeout(()=>p.remove(), 5000);
+  }
+}
+
+// ══════════════════════════════════════════
+// SETUP — PLAYERS
+// ══════════════════════════════════════════
+function renderPlayers(){
+  const list=document.getElementById('players-list');
+  list.innerHTML='';
+  state.players.forEach((p,i)=>{
+    const div=document.createElement('div');
+    div.className='player-item';
+    div.innerHTML=`
+      <div class="player-num">${i+1}</div>
+      <input class="player-input" type="text" value="${p}" placeholder="Joueur ${i+1}" maxlength="20" oninput="state.players[${i}]=this.value">
+      <button class="player-del" onclick="removePlayer(${i})">✕</button>`;
+    list.appendChild(div);
+  });
+  document.getElementById('btn-add-player').disabled = state.players.length >= 12;
+}
+
+function addPlayer(){
+  if(state.players.length>=12) return;
+  state.players.push('');
+  renderPlayers();
+  const inputs=document.querySelectorAll('.player-input');
+  inputs[inputs.length-1].focus();
+}
+
+function removePlayer(i){
+  if(state.players.length<=3){ toast('Minimum 3 joueurs !','warning'); return; }
+  state.players.splice(i,1);
+  renderPlayers();
+  updateRolesInfo();
+}
+
+// ══════════════════════════════════════════
+// SETUP — ROLES
+// ══════════════════════════════════════════
+function changeRole(type, delta){
+  const n=state.players.length;
+  if(type==='undercover'){
+    const next=state.numUndercover+delta;
+    if(next<1||next>Math.floor(n/2)) return;
+    state.numUndercover=next;
+  } else {
+    const next=state.numMrWhite+delta;
+    if(next<0||next>1) return;
+    state.numMrWhite=next;
+  }
+  updateRolesInfo();
+}
+
+function updateRolesInfo(){
+  document.getElementById('val-undercover').textContent=state.numUndercover;
+  document.getElementById('val-mrwhite').textContent=state.numMrWhite;
+  const n=state.players.length;
+  const special=state.numUndercover+state.numMrWhite;
+  const ok = special < n && special <= Math.floor(n/2);
+  document.getElementById('roles-error').classList.toggle('show',!ok);
+  document.getElementById('roles-info').textContent=`${state.numUndercover} undercover · ${state.numMrWhite} mr white · ${n-special} civils`;
+}
+
+// ══════════════════════════════════════════
+// SETUP — CATEGORIES
+// ══════════════════════════════════════════
+function renderCategoriesTo(containerId){
+  const container=document.getElementById(containerId);
+  if(!container) return;
+  // Group by type
+  const groups = {
+    'Animé 🗾': ['One Piece','Naruto','Jujutsu Kaisen','Dragon Ball','My Hero Academia','Hunter x Hunter','Bleach','Death Note','Demon Slayer','Attaque des Titans','One Punch Man','Fairy Tail','Tokyo Revengers'],
+    'Comics & Super-héros 🦸': ['Marvel','DC','The Boys'],
+    'Séries & Films 🎬': ['Star Wars','Harry Potter','Game of Thrones','Breaking Bad','Films cultes','Disney / Pixar'],
+    'Jeux Vidéo 🎮': ['Jeux Video'],
+  };
+  container.innerHTML='';
+  Object.entries(groups).forEach(([groupName, cats])=>{
+    const group=document.createElement('div');
+    group.className='cat-group';
+    group.innerHTML=`<div class="cat-group-header">${groupName}</div>`;
+    const grid=document.createElement('div');
+    grid.className='cat-grid';
+    cats.forEach(cat=>{
+      if(!DB[cat]) return;
+      const meta=CATEGORIES_META[cat]||{emoji:'🎯',color:'#888'};
+      const sel=state.selectedCats.has(cat);
+      const item=document.createElement('div');
+      item.className='cat-item'+(sel?' selected':'');
+      item.innerHTML=`<div class="cat-check"><span class="cat-check-icon">✓</span></div><div class="cat-name">${meta.emoji} ${cat}</div>`;
+      item.onclick=()=>toggleCat(cat,item);
+      grid.appendChild(item);
+    });
+    group.appendChild(grid);
+    container.appendChild(group);
+  });
+}
+
+function renderCategories(){
+  renderCategoriesTo('categories-container');
+  renderCategoriesTo('ol-categories');
+}
+
+function toggleCat(cat, el){
+  if(state.selectedCats.has(cat)){
+    if(state.selectedCats.size<=1){ toast('Au moins une catégorie !','warning'); return; }
+    state.selectedCats.delete(cat);
+    el.classList.remove('selected');
+  } else {
+    state.selectedCats.add(cat);
+    el.classList.add('selected');
+  }
+}
+
+function selectAllCats(){ state.selectedCats=new Set(Object.keys(DB)); renderCategories(); }
+function selectNoCats(){
+  state.selectedCats=new Set([Object.keys(DB)[0]]);
+  renderCategories();
+  toast('Minimum 1 catégorie conservée','warning');
+}
+
+// ══════════════════════════════════════════
+// START GAME
+// ══════════════════════════════════════════
+function startGame(){
+  // Collect player names
+  state.players = Array.from(document.querySelectorAll('.player-input')).map(i=>i.value.trim()||`Joueur ${Array.from(document.querySelectorAll('.player-input')).indexOf(i)+1}`);
+
+  if(state.players.length<3){ toast('Il faut au moins 3 joueurs !','warning'); return; }
+  document.getElementById('cats-error').classList.remove('show');
+  document.getElementById('roles-error').classList.remove('show');
+
+  const n=state.players.length;
+  const special=state.numUndercover+state.numMrWhite;
+  if(special>=n||special>Math.floor(n/2)){
+    document.getElementById('roles-error').classList.add('show'); return;
+  }
+  if(state.selectedCats.size===0){
+    document.getElementById('cats-error').classList.add('show'); return;
+  }
+
+  // Pick a word pair from selected categories
+  const availCats=Array.from(state.selectedCats).filter(c=>DB[c]);
+  const cat=rand(availCats);
+  const pair=rand(DB[cat]);
+  const flip=Math.random()<.5;
+  state.civilWord=flip?pair[0]:pair[1];
+  state.undercoverWord=flip?pair[1]:pair[0];
+
+  // Assign roles
+  let names=shuffle([...state.players]);
+  const roles=[];
+  names.forEach((name,i)=>{
+    let role,word;
+    if(i<state.numUndercover){ role='undercover'; word=state.undercoverWord; }
+    else if(i<state.numUndercover+state.numMrWhite){ role='mrwhite'; word='???'; }
+    else { role='civil'; word=state.civilWord; }
+    roles.push({name,role,word,alive:true});
+  });
+  state.roles=roles;
+  state.round=1;
+  state.distIndex=0;
+
+  renderDistribution();
+  showScreen('screen-distribution');
+}
+
+// ══════════════════════════════════════════
+// DISTRIBUTION
+// ══════════════════════════════════════════
+function renderDistribution(){
+  const n=state.roles.length;
+  // Progress dots
+  const prog=document.getElementById('dist-progress');
+  prog.innerHTML='';
+  state.roles.forEach((_,i)=>{
+    const d=document.createElement('div');
+    d.className='dist-dot'+(i<state.distIndex?' done':i===state.distIndex?' current':'');
+    prog.appendChild(d);
+  });
+
+  const p=state.roles[state.distIndex];
+  document.getElementById('dist-player-name').textContent=p.name;
+  document.getElementById('dist-avatar').textContent=initial(p.name);
+  document.getElementById('dist-round-pill').textContent=`JOUEUR ${state.distIndex+1} / ${n}`;
+
+  // Secret card
+  const sc=document.getElementById('secret-card');
+  sc.classList.add('blurred');
+  const roleTag=document.getElementById('secret-role-tag');
+  const charEl=document.getElementById('secret-character');
+  charEl.className='secret-character';
+
+  roleTag.textContent='🎭 TON PERSONNAGE';
+  if(p.role==='mrwhite'){
+    charEl.textContent='— Chut, tu ne connais pas le mot —';
+    charEl.classList.add('mrwhite');
+  } else {
+    charEl.textContent=p.word;
+  }
+
+  document.getElementById('reveal-actions').style.display='none';
+  document.getElementById('reveal-btn-wrap').style.display='block';
+}
+
+function doReveal(){
+  document.getElementById('secret-card').classList.remove('blurred');
+  document.getElementById('reveal-actions').style.display='flex';
+  document.getElementById('reveal-btn-wrap').style.display='none';
+}
+
+function nextDist(){
+  SFX.pass();
+  state.distIndex++;
+  if(state.distIndex>=state.roles.length){
+    startRound();
+  } else {
+    renderDistribution();
+  }
+}
+
+// ══════════════════════════════════════════
+// GAME ROUND
+// ══════════════════════════════════════════
+// ══════════════════════════════════════════
+// CHRONO + TOUR DE PAROLE
+// ══════════════════════════════════════════
+let _chronoTimer = null;
+let _chronoSec   = 60;
+const CHRONO_DURATION = 60;
+
+function startRound(){
+  csStopChrono();
+  if(state.round===1) SFX.gameStart();
+  const alive = state.roles.filter(r=>r.alive);
+  state.speakingOrder = shuffle(alive.map(r=>r.name));
+  state.currentSpeaker = 0;
+  renderGameScreen();
+  showScreen('screen-game');
+}
+
+function renderGameScreen(){
+  csStopChrono();
+  document.getElementById('game-round-badge').textContent = `TOUR ${state.round}`;
+  const alive = state.roles.filter(r=>r.alive);
+  document.getElementById('game-alive-count').textContent = `${alive.length} joueurs`;
+  document.getElementById('end-of-round-wrap').style.display = 'none';
+
+  const idx = state.currentSpeaker;
+  const name = state.speakingOrder[idx] || '';
+
+  // Current speaker card
+  document.getElementById('cs-name').textContent = name;
+  csResetChrono();
+
+  // Progress dots
+  const prog = document.getElementById('cs-progress');
+  prog.innerHTML = state.speakingOrder.map((n,i) =>
+    `<div class="cs-dot ${i < idx ? 'done' : i === idx ? 'current' : ''}" title="${n}"></div>`
+  ).join('');
+
+  // Speaking list (mini recap)
+  const list = document.getElementById('speaking-list');
+  list.innerHTML = state.speakingOrder.map((n,i) => {
+    const cls = i < idx ? 's-done' : i === idx ? 's-current' : '';
+    const tag = i < idx ? '✅' : i === idx ? '🎤' : '⏳';
+    return `<div class="speaking-item ${cls}">
+      <div class="speaking-num">${i+1}</div>
+      <div class="speaking-name">${escHtml(n)}</div>
+      <div class="speaking-tag">${tag}</div>
+    </div>`;
+  }).join('');
+}
+
+// ── Chrono ────────────────────────────────────────────────────────────
+function csResetChrono(){
+  _chronoSec = CHRONO_DURATION;
+  document.getElementById('cs-time').textContent = CHRONO_DURATION;
+  document.getElementById('cs-time').className = 'cs-time';
+  const bar = document.getElementById('cs-ring-bar');
+  bar.style.strokeDashoffset = '0';
+  bar.setAttribute('class','cs-ring-bar');
+  document.getElementById('cs-start-wrap').style.display = 'block';
+  document.getElementById('cs-pass-wrap').style.display  = 'none';
+}
+
+function csStart(){
+  SFX.start();
+  document.getElementById('cs-start-wrap').style.display = 'none';
+  document.getElementById('cs-pass-wrap').style.display  = 'block';
+  csTickChrono();
+  _chronoTimer = setInterval(csTickChrono, 1000);
+}
+
+function csTickChrono(){
+  _chronoSec--;
+  if(_chronoSec < 0){ _chronoSec = 0; }
+  const timeEl = document.getElementById('cs-time');
+  const bar    = document.getElementById('cs-ring-bar');
+  const ratio  = _chronoSec / CHRONO_DURATION;
+  const circ   = 2 * Math.PI * 34; // r=34
+  bar.style.strokeDashoffset = circ * (1 - ratio);
+
+  timeEl.textContent = _chronoSec;
+  if(_chronoSec <= 10){
+    timeEl.className = 'cs-time danger';
+    bar.setAttribute('class','cs-ring-bar danger');
+    SFX.tickWarn();
+  } else if(_chronoSec <= 20){
+    timeEl.className = 'cs-time warn';
+    bar.setAttribute('class','cs-ring-bar warn');
+    SFX.tick();
+  }
+  if(_chronoSec === 0){
+    csStopChrono();
+    SFX.timesUp();
+    if(navigator.vibrate) navigator.vibrate([200,100,200]);
+    toast('⏰ Temps écoulé !', 'warning');
+  }
+}
+
+function csStopChrono(){
+  if(_chronoTimer){ clearInterval(_chronoTimer); _chronoTimer = null; }
+}
+
+function csPass(){
+  SFX.pass();
+  csStopChrono();
+  state.currentSpeaker++;
+  if(state.currentSpeaker >= state.speakingOrder.length){
+    // Fin du tour — proposer de voter
+    renderGameScreen();
+    document.getElementById('cs-start-wrap').style.display = 'none';
+    document.getElementById('cs-pass-wrap').style.display  = 'none';
+    document.getElementById('cs-name').textContent         = '✅ Tour terminé !';
+    document.getElementById('cs-progress').querySelectorAll('.cs-dot').forEach(d=>d.className='cs-dot done');
+    document.getElementById('end-of-round-wrap').style.display = 'block';
+  SFX.roundEnd();
+  } else {
+    renderGameScreen();
+  }
+}
+
+function skipVote(){
+  SFX.click();
+  state.round++;
+  startRound();
+}
+
+function goToVote(){
+  SFX.vote();
+  renderVoteScreen();
+  showScreen('screen-vote');
+}
+
+function backToGame(){
+  renderGameScreen();
+  showScreen('screen-game');
+}
+
+// ══════════════════════════════════════════
+// VOTE
+// ══════════════════════════════════════════
+let selectedVote = null;
+function renderVoteScreen(){
+  selectedVote = null;
+  document.getElementById('vote-title-label').textContent = 'VOTE';
+  document.getElementById('vote-subtitle').textContent    = `Tour ${state.round} · Qui est l'imposteur ?`;
+  document.getElementById('vote-error').classList.remove('show');
+  const alive = state.roles.filter(r=>r.alive);
+  const list  = document.getElementById('vote-list');
+  list.innerHTML = '';
+  alive.forEach(p => {
+    const item = document.createElement('div');
+    item.className   = 'vote-item';
+    item.dataset.name = p.name;
+    item.innerHTML = `<div class="vote-name">${escHtml(p.name)}</div><div class="vote-circle"></div>`;
+    item.onclick = ()=>{
+      SFX.vote();
+      document.querySelectorAll('.vote-item').forEach(i=>{ i.classList.remove('selected'); i.querySelector('.vote-circle').textContent=''; });
+      item.classList.add('selected');
+      selectedVote = p.name;
+      item.querySelector('.vote-circle').textContent = '✓';
+    };
+    list.appendChild(item);
+  });
+}
+
+function confirmVote(){
+  if(!selectedVote){
+    SFX.error();
+    document.getElementById('vote-error').classList.add('show');
+    return;
+  }
+  SFX.voteConfirm();
+  const player = state.roles.find(r=>r.name===selectedVote);
+  eliminatePlayer(player);
+}
+
+// ══════════════════════════════════════════
+// ELIMINATION
+// ══════════════════════════════════════════
+function eliminatePlayer(player){
+  player.alive=false;
+  state.votedOut=player;
+
+  const splash=document.getElementById('elim-splash');
+  splash.className='elim-splash '+player.role;
+  document.getElementById('elim-emoji').textContent = player.role==='undercover'?'🎭':player.role==='mrwhite'?'🤍':'😇';
+  document.getElementById('elim-name').textContent=player.name;
+
+  const roleLabels={civil:'⚪ CIVIL',undercover:'🔴 UNDERCOVER',mrwhite:'⬜ MR WHITE'};
+  document.getElementById('elim-role').textContent=roleLabels[player.role]||player.role.toUpperCase();
+
+  if(player.role==='mrwhite'){
+    document.getElementById('elim-word').innerHTML='Il ne connaissait pas le mot...';
+  } else {
+    document.getElementById('elim-word').innerHTML=`Son personnage : <span>${player.word}</span>`;
+  }
+
+  const info=document.getElementById('elim-info');
+  const alive=state.roles.filter(r=>r.alive);
+  const undercoverAlive=alive.filter(r=>r.role==='undercover').length;
+  const mrwhiteAlive=alive.filter(r=>r.role==='mrwhite').length;
+  info.innerHTML=`<span>👥</span><span>Joueurs restants : ${alive.length} · Imposteurs restants : ${undercoverAlive}</span>`;
+
+  const continueBtn=document.getElementById('btn-elim-continue');
+
+  // Mr White gets a guess
+  if(player.role==='mrwhite'){
+    continueBtn.textContent='🎯 Mr White devine...';
+    continueBtn.onclick=()=>{
+      document.getElementById('mrw-player-name').textContent=player.name;
+      document.getElementById('mrw-input').value='';
+      showScreen('screen-mrwhite');
+    };
+    showScreen('screen-elimination');
+    return;
+  }
+
+  // Check win conditions
+  const winResult=checkWinConditions();
+  if(winResult){
+    continueBtn.textContent='Voir le résultat 🏆';
+    continueBtn.onclick=()=>showVictory(winResult);
+  } else {
+    continueBtn.textContent=`Tour ${state.round+1} →`;
+    continueBtn.onclick=()=>{ state.round++; startRound(); };
+  }
+  // Flash + SFX selon rôle éliminé
+  if(player.role==='undercover'||player.role==='mrwhite') SFX.elimUnder();
+  else SFX.elimCivil();
+  flashScreen(player.role==='undercover'?'#ff2255':player.role==='mrwhite'?'#ffffff':'#00ff88');
+  showScreen('screen-elimination');
+}
+
+// ══════════════════════════════════════════
+// MR WHITE GUESS
+// ══════════════════════════════════════════
+function checkMrWhite(){
+  const guess=(document.getElementById('mrw-input').value||'').trim().toLowerCase();
+  const civil=state.civilWord.toLowerCase();
+  if(!guess){ toast('Entre une réponse !','warning'); return; }
+
+  const correct = guess===civil || civil.includes(guess) || guess.includes(civil);
+
+  if(correct){
+    showVictory({winner:'mrwhite', reason:'Mr White a deviné le mot civil !'});
+  } else {
+    // Check remaining win conditions
+    const winResult=checkWinConditions();
+    if(winResult){
+      showVictory(winResult);
+    } else {
+      toast('❌ Mauvaise réponse ! La partie continue.','');
+      state.round++;
+      startRound();
+    }
+  }
+}
+
+// ══════════════════════════════════════════
+// WIN CONDITIONS
+// ══════════════════════════════════════════
+function checkWinConditions(){
+  const alive=state.roles.filter(r=>r.alive);
+  const civils=alive.filter(r=>r.role==='civil');
+  const undercovers=alive.filter(r=>r.role==='undercover');
+  const mrwhites=alive.filter(r=>r.role==='mrwhite');
+
+  // All undercovers & mrwhites eliminated
+  if(undercovers.length===0 && mrwhites.length===0){
+    return {winner:'civil', reason:'Tous les imposteurs ont été éliminés !'};
+  }
+  // Imposteurs equal or outnumber civils
+  if(undercovers.length >= civils.length){
+    return {winner:'undercover', reason:'Les Imposteurs ont pris le contrôle !'};
+  }
+  // Only 2 or 3 players left with at least 1 undercover
+  if(alive.length<=3 && undercovers.length>=1){
+    // If mr white still alive, civils might still win
+    if(mrwhites.length===0){
+      return {winner:'undercover', reason:'Trop peu de civils restants !'};
+    }
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════
+// VICTORY
+// ══════════════════════════════════════════
+function showVictory(result){
+  const vt=document.getElementById('v-title');
+  const ve=document.getElementById('v-emoji');
+  const vs=document.getElementById('v-sub');
+  vt.className='victory-title '+result.winner;
+
+  if(result.winner==='civil'){
+    ve.textContent='🎉';vt.textContent='CIVILS GAGNENT !';
+  } else if(result.winner==='undercover'){
+    ve.textContent='😈';vt.textContent='UNDERCOVERS GAGNENT !';
+  } else {
+    ve.textContent='🤍';vt.textContent='MR WHITE GAGNE !';
+  }
+  vs.textContent=result.reason;
+
+  document.getElementById('v-civil-word').textContent=state.civilWord;
+  document.getElementById('v-under-word').textContent=state.undercoverWord;
+
+  // Recap
+  const recap=document.getElementById('recap-list');
+  recap.innerHTML='';
+  state.roles.forEach(p=>{
+    const item=document.createElement('div');
+    item.className='recap-item';
+    const badge=p.role==='civil'?'badge-civil':p.role==='undercover'?'badge-undercover':'badge-mrwhite';
+    const roleLabel=p.role==='civil'?'Civil':p.role==='undercover'?'Undercover':'Mr White';
+    item.innerHTML=`
+      <div>
+        <div class="recap-name">${p.name}</div>
+        <div class="recap-word">${p.word||"—"}</div>
+      </div>
+      <span class="badge ${badge}">${roleLabel}</span>`;
+    recap.appendChild(item);
+  });
+
+  if(result.winner==='civil'){ SFX.victory(); spawnConfetti(); flashScreen('#00ff88',400); }
+  else if(result.winner==='mrwhite'){ SFX.victory(); flashScreen('#ffffff',300); }
+  else { SFX.defeat(); flashScreen('#ff2255',400); }
+  // Boutons mode offline
+  document.getElementById('victory-btns-online').style.display='none';
+  document.getElementById('victory-btns-offline').style.display='flex';
+  showScreen('screen-victory');
+}
+
+// ══════════════════════════════════════════
+// CONFIRM END
+// ══════════════════════════════════════════
+function confirmEnd(){
+  showModal('⏹ Arrêter ?','Voulez-vous vraiment mettre fin à la partie en cours ?',[
+    {label:'Annuler',cls:'btn-ghost'},
+    {label:'Oui, terminer',cls:'btn-danger',action:()=>showScreen('screen-home')},
+  ]);
+}
+
+// ══════════════════════════════════════════
+// RULES
+// ══════════════════════════════════════════
+function showRules(){
+  showModal('📖 Règles',`
+    <div style="font-size:.88rem;line-height:1.8;color:var(--text2)">
+      <b style="color:var(--text)">But du jeu :</b><br>
+      Les <span style="color:var(--g)">Civils</span> doivent débusquer les imposteurs.<br>
+      Les <span style="color:var(--r)">Imposteurs</span> cherchent à se fondre dans la masse.<br>
+      <b style="color:#fff">Mr White</b> ne connaît pas le mot !<br><br>
+      <b style="color:var(--text)">Déroulement :</b><br>
+      1. Chaque joueur reçoit un personnage secret<br>
+      2. À tour de rôle, donnez un indice <b>sans nommer</b> votre perso<br>
+      3. Vote pour éliminer le plus suspect<br>
+      4. Répétez jusqu'à la victoire !<br><br>
+      <b style="color:var(--text)">Victoire Civils :</b> Éliminer tous les imposteurs<br>
+      <b style="color:var(--r)">Victoire Undercover :</b> Être en majorité<br>
+      <b style="color:#fff">Victoire Mr White :</b> Deviner le mot civil quand éliminé
+    </div>`,[
+    {label:'Compris !',cls:'btn-primary'},
+  ]);
+}
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+// ══════════════════════════════════════════════════════════════════════
+// MODE EN LIGNE — Firebase Realtime Database
+// Remplace ton FIREBASE_CONFIG ci-dessous avec ta config Firebase
+// ══════════════════════════════════════════════════════════════════════
+
+// ─── CONFIGURATION FIREBASE ─────────────────────────────────────────────
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyDRG5M9RLk-C87WxOPkSIZIQXo66kIuBRo",
+  authDomain:        "undercover-3b721.firebaseapp.com",
+  databaseURL:       "https://undercover-3b721-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:         "undercover-3b721",
+  storageBucket:     "undercover-3b721.firebasestorage.app",
+  messagingSenderId: "741841085082",
+  appId:             "1:741841085082:web:16ee0b9d41f1cf14c2f523"
+};
+// ────────────────────────────────────────────────────────────────────────
+
+let _fbApp = null;
+let _fbDb  = null;
+let _fbInitTried = false;
+
+// ── Firebase init robuste ─────────────────────────────────────────────
+function fbGetDb(){
+  // Déjà initialisé
+  if(_fbDb) return _fbDb;
+
+  // Vérif SDK chargé
+  if(typeof firebase === 'undefined'){
+    throw new Error('Firebase SDK non chargé — vérifiez votre connexion internet');
+  }
+
+  // Config non remplie
+
+
+  try{
+    // Si déjà une app existe (reload), la réutiliser
+    if(firebase.apps && firebase.apps.length > 0){
+      _fbApp = firebase.apps[0];
+    } else {
+      _fbApp = firebase.initializeApp(FIREBASE_CONFIG);
+    }
+    _fbDb = firebase.database();
+    return _fbDb;
+  } catch(e){
+    _fbApp = null; _fbDb = null;
+    throw new Error('Erreur init Firebase : ' + e.message);
+  }
+}
+
+async function olRead(code){
+  try{
+    const db   = fbGetDb();
+    const snap = await db.ref('rooms/'+code).once('value');
+    return snap.val();
+  } catch(e){
+    console.error('olRead error', e);
+    return null;
+  }
+}
+
+async function olWrite(code, data){
+  try{
+    const db = fbGetDb();
+    data.ts  = Date.now();
+    await db.ref('rooms/'+code).set(data);
+    return true;
+  } catch(e){
+    console.error('olWrite error', e);
+    return false;
+  }
+}
+
+async function olDelete(code){
+  try{
+    const db = fbGetDb();
+    await db.ref('rooms/'+code).remove();
+  } catch(e){ console.error('olDelete error', e); }
+}
+
+// ── Génère un code 4 lettres unique ──────────────────────────────────
+function olGenCode(){
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  return Array.from({length:4}, ()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+
+// ── Objet état online ─────────────────────────────────────────────────
+const OL = {
+  roomCode: null,
+  _lastElimTarget: -99,
+  _passLocked: false,
+  myName:   null,
+  isHost:   false,
+  myIndex:  -1,
+  pollTimer: null,
+  voteSubmitted: false,
+  numUndercover: 1,
+  numMrWhite:    0,
+  _elimTarget:   -1,
+};
+
+
+// ── Crée une room (hôte) ──────────────────────────────────────────────
+async function olCreateRoom(){
+  // Vérif config
+
+  // Bouton loading
+  const btn = event?.currentTarget || document.querySelector('.mc-on');
+  const origHTML = btn ? btn.innerHTML : '';
+  if(btn){ btn.innerHTML = '<span style="opacity:.6">⏳ Connexion…</span>'; btn.style.pointerEvents='none'; }
+
+  try{
+    // Test connexion Firebase avant de continuer
+    fbGetDb();
+  } catch(e){
+    if(btn){ btn.innerHTML = origHTML; btn.style.pointerEvents=''; }
+    showModal('❌ Erreur de connexion',
+      `<div style="font-size:.85rem;color:var(--text2);line-height:1.8">${escHtml(e.message)}<br><br>Vérifie ta connexion internet et ta config Firebase.</div>`,
+      [{label:'OK', cls:'btn-primary'}]);
+    return;
+  }
+
+  const code = olGenCode();
+  const hostName = 'Hôte';
+  const room = {
+    code, phase:'lobby',
+    players:[{name:hostName, ready:false, voted:false, vote:null, alive:true}],
+    numUndercover:1, numMrWhite:0,
+    assignments:[], civilWord:'', undercoverWord:'',
+    round:1, speakingOrder:[], speakerIdx:0, elimTarget:-1,
+    winner:null, ts: Date.now()
+  };
+
+  const ok = await olWrite(code, room);
+  if(btn){ btn.innerHTML = origHTML; btn.style.pointerEvents=''; }
+
+  if(!ok){
+    showModal('❌ Impossible de créer la room',
+      '<div style="font-size:.85rem;color:var(--text2);line-height:1.8">Erreur Firebase.<br>Vérifie ta connexion et les règles de ta base de données.</div>',
+      [{label:'OK', cls:'btn-primary'}]);
+    return;
+  }
+
+  OL.roomCode      = code;
+  OL.myName        = hostName;
+  OL.isHost        = true;
+  OL.myIndex       = 0;
+  OL.numUndercover = 1;
+  OL.numMrWhite    = 0;
+  OL.voteSubmitted = false;
+
+  document.getElementById('ol-room-code').textContent      = code;
+  document.getElementById('ol-game-roomlabel').textContent = 'Room '+code;
+  SFX.connect();
+  renderOlCategories();
+  showScreen('screen-ol-host');
+  olStartPoll();
+}
+
+function olCopyCode(){
+  const code = OL.roomCode;
+  navigator.clipboard.writeText(code).catch(()=>{});
+  toast('📋 Code copié : '+code, 'success');
+}
+
+function olChangeRole(role, delta){
+  if(role==='undercover') OL.numUndercover = Math.max(1, OL.numUndercover+delta);
+  if(role==='mrwhite')    OL.numMrWhite    = Math.max(0, OL.numMrWhite+delta);
+  document.getElementById('ol-val-uc').textContent = OL.numUndercover;
+  document.getElementById('ol-val-mw').textContent = OL.numMrWhite;
+}
+
+function renderOlCategories(){
+  renderCategoriesTo('ol-categories');
+}
+
+// ── Rejoindre une room ────────────────────────────────────────────────
+async function olJoin(){
+  const name  = document.getElementById('ol-join-name').value.trim();
+  const code  = document.getElementById('ol-join-code').value.trim().toUpperCase();
+  const errEl = document.getElementById('ol-join-err');
+  errEl.classList.remove('show');
+
+  if(!name){ errEl.textContent='❌ Entre ton prénom.'; errEl.classList.add('show'); return; }
+  if(code.length!==4){ errEl.textContent='❌ Code de 4 caractères.'; errEl.classList.add('show'); return; }
+
+  // Test Firebase
+  try{ fbGetDb(); } catch(e){
+    errEl.textContent='❌ Pas de connexion Firebase — vérifie internet.';
+    errEl.classList.add('show'); return;
+  }
+
+  // Loading
+  const joinBtn = document.querySelector('#screen-ol-join .btn-primary');
+  const origTxt = joinBtn ? joinBtn.textContent : '';
+  if(joinBtn){ joinBtn.textContent='⏳ Connexion…'; joinBtn.disabled=true; }
+
+  const room = await olRead(code);
+
+  if(joinBtn){ joinBtn.textContent=origTxt; joinBtn.disabled=false; }
+
+  if(!room){
+    errEl.textContent='❌ Room introuvable — vérifie le code.';
+    errEl.classList.add('show'); return;
+  }
+  if(room.phase!=='lobby'){
+    errEl.textContent='❌ La partie a déjà commencé.';
+    errEl.classList.add('show'); return;
+  }
+  if(room.players.length >= 12){
+    errEl.textContent='❌ Room pleine (max 12 joueurs).';
+    errEl.classList.add('show'); return;
+  }
+
+  const idx = room.players.length;
+  room.players.push({name, ready:false, voted:false, vote:null, alive:true});
+  const ok = await olWrite(code, room);
+  if(!ok){
+    errEl.textContent='❌ Erreur de connexion. Réessaie.';
+    errEl.classList.add('show'); return;
+  }
+
+  OL.roomCode      = code;
+  OL.myName        = name;
+  OL.isHost        = false;
+  OL.myIndex       = idx;
+  OL.voteSubmitted = false;
+
+  document.getElementById('ol-game-roomlabel').textContent = 'Room '+code;
+  SFX.connect();
+  showScreen('screen-ol-wait');
+  olStartPoll();
+}
+
+// ── Leave ─────────────────────────────────────────────────────────────
+async function olLeave(){
+  olStopPoll();
+  // Stop chronos
+  if(typeof _chronoTimer!=='undefined' && _chronoTimer){ clearInterval(_chronoTimer); _chronoTimer=null; }
+  if(_olChronoTimer){ clearInterval(_olChronoTimer); _olChronoTimer=null; }
+  if(OL.isHost && OL.roomCode){ await olDelete(OL.roomCode); }
+  OL.roomCode=null; OL.myName=null; OL.isHost=false; OL.myIndex=-1;
+  OL.voteSubmitted=false; _pollFailCount=0; _olSelectedVote=-1;
+  showScreen('screen-mode');
+}
+
+// ── Polling toutes les 2s ─────────────────────────────────────────────
+function olStartPoll(){ olStopPoll(); OL.pollTimer=setInterval(olPoll,1000); olPoll(); }
+function olStopPoll(){ if(OL.pollTimer){ clearInterval(OL.pollTimer); OL.pollTimer=null; } }
+
+let _pollFailCount = 0;
+async function olPoll(){
+  if(!OL.roomCode) return;
+  const room = await olRead(OL.roomCode);
+  if(!room){
+    _pollFailCount++;
+    // Tolerance: 3 echecs consecutifs avant de couper (reseau instable)
+    if(_pollFailCount >= 3){
+      olStopPoll();
+      const curId = document.querySelector('.screen.active')?.id||'';
+      // Ne pas quitter si on est déjà sur un écran final
+      if(!['screen-victory','screen-home','screen-mode'].includes(curId)){
+        toast('❌ Connexion perdue — retour au menu');
+        setTimeout(()=>showScreen('screen-mode'), 1500);
+      }
+    } else {
+      // Simple echec reseau temporaire, on reessaie
+      console.warn('olPoll: echec #'+_pollFailCount);
+    }
+    return;
+  }
+  _pollFailCount = 0; // reset compteur
+
+  const curId = document.querySelector('.screen.active')?.id || '';
+
+  if(room.phase==='lobby'){
+    if(curId==='screen-ol-host'){
+      olRenderHostLobby(room);
+    } else if(curId==='screen-ol-wait'){
+      olRenderWaitLobby(room);
+    } else if(!['screen-ol-host','screen-ol-wait'].includes(curId)){
+      // L'hôte a relancé depuis n'importe quel écran → attente
+      showScreen('screen-ol-wait');
+      olRenderWaitLobby(room);
+    }
+  }
+  else if(room.phase==='card'){
+    // Afficher la carte si pas encore sur cet écran
+    if(curId!=='screen-ol-card'){
+      olShowMyCard(room);
+    }
+    // Failsafe : si tout le monde est ready mais phase pas changée
+    // (race condition entre deux joueurs) → forcer 'talk'
+    if(room.players.every(p=>p.ready) && OL.isHost){
+      room.phase = 'talk';
+      room.speakerIdx = 0;
+      room.ts = Date.now();
+      await olWrite(OL.roomCode, room);
+    }
+  }
+  else if(['talk','vote','endofturn'].includes(room.phase)){
+    // Aller sur l'écran de jeu depuis n'importe où
+    if(curId!=='screen-ol-game'){
+      showScreen('screen-ol-game');
+    }
+    olRenderGame(room);
+  }
+  else if(room.phase==='elim'){
+    // Afficher élim seulement une fois (évite de réinitialiser le bouton)
+    if(curId!=='screen-elimination' || OL._lastElimTarget !== room.elimTarget){
+      OL._lastElimTarget = room.elimTarget;
+      olShowElim(room);
+    }
+  }
+  else if(room.phase==='mrwhite'){
+    if(OL.myIndex===room.mrwhiteIdx && curId!=='screen-mrwhite'){
+      document.getElementById('mrw-player-name').textContent=room.players[room.mrwhiteIdx].name;
+      document.getElementById('mrw-input').value='';
+      showScreen('screen-mrwhite');
+    }
+  }
+  else if(room.phase==='victory'){
+    if(curId!=='screen-victory') olShowVictory(room);
+  }
+}
+
+// ── Lobby renders ─────────────────────────────────────────────────────
+function olRenderHostLobby(room){
+  document.getElementById('ol-host-count').textContent=room.players.length+' connecté'+(room.players.length>1?'s':'');
+  document.getElementById('ol-host-players').innerHTML=room.players.map((p,i)=>`
+    <div class="ol-player-row">
+      <div class="ol-dot green${i>0?' pulse':''}"></div>
+      <div style="flex:1;font-weight:900">${escHtml(p.name)}</div>
+      <div style="font-size:.72rem;color:var(--text2)">${i===0?'Hôte':'Joueur'}</div>
+    </div>`).join('');
+}
+
+function olRenderWaitLobby(room){
+  document.getElementById('ol-wait-players').innerHTML=room.players.map((p,i)=>`
+    <div class="ol-player-row">
+      <div class="ol-dot green"></div>
+      <div style="flex:1;font-weight:900">${escHtml(p.name)}</div>
+      <div style="font-size:.72rem;color:var(--text2)">${i===0?'Hôte':'Joueur'}</div>
+    </div>`).join('');
+}
+
+// ── Host lance la partie ──────────────────────────────────────────────
+async function olHostStart(){
+  const startBtn = document.querySelector('#screen-ol-host .btn-primary');
+  if(startBtn){ startBtn.textContent='⏳ Lancement…'; startBtn.disabled=true; }
+
+  const room = await olRead(OL.roomCode);
+  if(!room){
+    if(startBtn){ startBtn.textContent='🚀 LANCER LA PARTIE'; startBtn.disabled=false; }
+    toast('❌ Impossible de lire la room. Réessaie.'); return;
+  }
+  const n = room.players.length;
+
+  const errEl = document.getElementById('ol-start-err');
+  if(n<3){
+    errEl.textContent='❌ Minimum 3 joueurs.';
+    errEl.classList.add('show');
+    if(startBtn){ startBtn.textContent='🚀 LANCER LA PARTIE'; startBtn.disabled=false; }
+    return;
+  }
+  errEl.classList.remove('show');
+
+  const special = OL.numUndercover+OL.numMrWhite;
+  const roleErr = document.getElementById('ol-roles-err');
+  if(special>=n-1){
+    roleErr.classList.add('show');
+    if(startBtn){ startBtn.textContent='🚀 LANCER LA PARTIE'; startBtn.disabled=false; }
+    return;
+  }
+  roleErr.classList.remove('show');
+
+  // Choisir paire de mots
+  const cats=[...state.selectedCats].filter(c=>DB[c]);
+  if(!cats.length){ toast('❌ Sélectionne une catégorie'); return; }
+  const cat=cats[Math.floor(Math.random()*cats.length)];
+  const pair=DB[cat][Math.floor(Math.random()*DB[cat].length)];
+  const flip=Math.random()<.5;
+  const civilWord=flip?pair[0]:pair[1];
+  const undercoverWord=flip?pair[1]:pair[0];
+
+  // Assigner les rôles
+  const order=[...Array(n).keys()].sort(()=>Math.random()-.5);
+  const assignments=new Array(n);
+  order.forEach((pi,pos)=>{
+    let role,word;
+    if(pos<OL.numUndercover){role='undercover';word=undercoverWord;}
+    else if(pos<OL.numUndercover+OL.numMrWhite){role='mrwhite';word=null;}
+    else{role='civil';word=civilWord;}
+    assignments[pi]={role,word};
+  });
+
+  const speakingOrder=[...Array(n).keys()].sort(()=>Math.random()-.5);
+
+  room.phase='card';
+  room.speakerIdx=0;
+  room.assignments=assignments;
+  room.civilWord=civilWord;
+  room.undercoverWord=undercoverWord;
+  room.speakingOrder=speakingOrder;
+  room.round=1;
+  room.numUndercover=OL.numUndercover;
+  room.numMrWhite=OL.numMrWhite;
+  room.elimTarget=-1;
+  // L'hôte (index 0) est automatiquement ready — il ne voit pas de carte
+  room.players=room.players.map((p,i)=>({...p,alive:true,ready:i===0,voted:false,vote:null}));
+
+  const ok = await olWrite(OL.roomCode, room);
+  if(startBtn){ startBtn.textContent='🚀 LANCER LA PARTIE'; startBtn.disabled=false; }
+  if(!ok){
+    toast('❌ Erreur Firebase — réessaie');
+  }
+}
+
+// ── Card reveal ───────────────────────────────────────────────────────
+function olShowMyCard(room){
+  const me=room.players[OL.myIndex];
+  const asgn=room.assignments[OL.myIndex];
+  document.getElementById('ol-card-avatar').textContent=me.name[0].toUpperCase();
+  document.getElementById('ol-card-pname').textContent=me.name;
+  const charEl=document.getElementById('ol-secret-char');
+  if(asgn.role==='mrwhite'){
+    charEl.textContent='— Tu ne connais pas le personnage. Bluff ! —';
+    charEl.className='secret-character mrwhite word-revealed';
+  } else {
+    charEl.textContent=asgn.word;
+    charEl.className='secret-character word-revealed';
+  }
+  document.getElementById('ol-secret-card').classList.add('blurred');
+  document.getElementById('ol-reveal-actions').style.display='none';
+  document.getElementById('ol-reveal-btn-wrap').style.display='block';
+  showScreen('screen-ol-card');
+}
+
+function olRevealCard(){
+  SFX.reveal();
+  document.getElementById('ol-secret-card').classList.remove('blurred');
+  document.getElementById('ol-reveal-btn-wrap').style.display='none';
+  document.getElementById('ol-reveal-actions').style.display='flex';
+}
+
+async function olCardDone(){
+  // Marquer ce joueur comme ready
+  let room = await olRead(OL.roomCode);
+  if(!room) return;
+  
+  // Déjà ready ? (double-clic protection)
+  if(room.players[OL.myIndex].ready){
+    if(room.phase === 'talk'){ showScreen('screen-ol-game'); olPoll(); }
+    return;
+  }
+  
+  room.players[OL.myIndex].ready = true;
+  
+  // Vérifier si tous ready (incluant l'hôte qui est auto-ready)
+  const allReady = room.players.every(p => p.ready);
+  
+  if(allReady && room.phase === 'card'){
+    room.phase = 'talk';
+    room.speakerIdx = 0;
+    room.ts = Date.now();
+    await olWrite(OL.roomCode, room);
+    SFX.gameStart();
+    showScreen('screen-ol-game');
+    olPoll();
+  } else {
+    await olWrite(OL.roomCode, room);
+    if(room.phase === 'talk'){
+      SFX.gameStart();
+      showScreen('screen-ol-game');
+      olPoll();
+    } else {
+      SFX.pass();
+      toast('✅ En attente des autres…', 'success');
+    }
+  }
+}
+
+// ── Online chrono ─────────────────────────────────────────────────────
+let _olChronoTimer = null;
+let _olChronoSec   = 60;
+
+function olCsResetChrono(){
+  _olChronoSec = 60;
+  const timeEl = document.getElementById('ol-cs-time');
+  const bar    = document.getElementById('ol-cs-ring-bar');
+  if(timeEl){ timeEl.textContent='60'; timeEl.className='cs-time'; }
+  if(bar){ bar.setAttribute('class','cs-ring-bar'); bar.style.strokeDashoffset='0'; }
+}
+
+function olCsStart(){
+  if(OL._passLocked) return; // anti-spam
+  OL._passLocked = false; // reset pour le pass
+  SFX.start();
+  document.getElementById('ol-cs-start-wrap').style.display='none';
+  document.getElementById('ol-cs-pass-wrap').style.display='block';
+  if(_olChronoTimer) clearInterval(_olChronoTimer);
+  _olChronoTimer = setInterval(olCsTick, 1000);
+  olCsTick();
+}
+
+function olCsTick(){
+  _olChronoSec--;
+  if(_olChronoSec < 0) _olChronoSec = 0;
+  const timeEl = document.getElementById('ol-cs-time');
+  const bar    = document.getElementById('ol-cs-ring-bar');
+  if(!timeEl) return;
+  const circ  = 2 * Math.PI * 34;
+  const ratio = _olChronoSec / 60;
+  bar.style.strokeDashoffset = circ * (1 - ratio);
+  timeEl.textContent = _olChronoSec;
+  if(_olChronoSec <= 10){
+    timeEl.className = 'cs-time danger';
+    bar.setAttribute('class','cs-ring-bar danger');
+    SFX.tickWarn();
+  } else if(_olChronoSec <= 20){
+    timeEl.className = 'cs-time warn';
+    bar.setAttribute('class','cs-ring-bar warn');
+    SFX.tick();
+  }
+  if(_olChronoSec === 0){
+    clearInterval(_olChronoTimer); _olChronoTimer = null;
+    SFX.timesUp();
+    if(navigator.vibrate) navigator.vibrate([200,100,200]);
+    toast('⏰ Temps écoulé !','warning');
+  }
+}
+
+async function olCsPass(){
+  if(OL._passLocked) return; // anti-spam
+  OL._passLocked = true;
+  SFX.pass();
+  if(_olChronoTimer){ clearInterval(_olChronoTimer); _olChronoTimer=null; }
+  // Cacher le bouton immédiatement
+  document.getElementById('ol-cs-pass-wrap').style.display = 'none';
+  const room = await olRead(OL.roomCode);
+  if(!room){ OL._passLocked=false; return; }
+  // Vérifier que c'est bien notre tour (anti-spam sécurité)
+  const aliveOrder = room.speakingOrder.filter(i => room.players[i].alive);
+  const currentPIdx = aliveOrder[room.speakerIdx||0];
+  if(currentPIdx !== OL.myIndex){ OL._passLocked=false; return; }
+  room.speakerIdx = (room.speakerIdx||0) + 1;
+  if(room.speakerIdx >= aliveOrder.length){
+    room.phase = 'endofturn';
+  }
+  room.ts = Date.now();
+  await olWrite(OL.roomCode, room);
+  OL._passLocked = false;
+}
+
+async function olSkipVote(){
+  if(_olChronoTimer){ clearInterval(_olChronoTimer); _olChronoTimer=null; }
+  _olSelectedVote = -1;
+  OL._elimTarget  = -1;
+  OL._passLocked  = false;
+  const room = await olRead(OL.roomCode);
+  if(!room) return;
+  room.phase      = 'talk';
+  room.speakerIdx = 0;
+  room.round++;
+  room.players = room.players.map(p=>({...p,voted:false,vote:null}));
+  room.ts = Date.now();
+  await olWrite(OL.roomCode, room);
+}
+
+// ── Game render ───────────────────────────────────────────────────────
+function olRenderGame(room){
+  const alive = room.players.map((p,i)=>({...p,idx:i})).filter(p=>p.alive);
+  document.getElementById('ol-round-badge').textContent = 'TOUR '+room.round;
+  document.getElementById('ol-alive-count').textContent = alive.length+' joueurs';
+  document.getElementById('ol-game-sync').textContent   = 'En ligne · Room '+OL.roomCode;
+
+  if(room.phase==='talk'){
+    document.getElementById('ol-phase-talk').style.display = 'block';
+    document.getElementById('ol-phase-vote').style.display = 'none';
+    document.getElementById('ol-end-of-round').style.display = 'none';
+    olRenderTalk(room, alive);
+  }
+  else if(room.phase==='endofturn'){
+    document.getElementById('ol-phase-talk').style.display  = 'block';
+    document.getElementById('ol-phase-vote').style.display  = 'none';
+    document.getElementById('ol-end-of-round').style.display = 'block';
+    document.getElementById('ol-cs-start-wrap').style.display = 'none';
+    document.getElementById('ol-cs-pass-wrap').style.display  = 'none';
+    document.getElementById('ol-cs-name').textContent = '✅ Tour terminé !';
+    document.getElementById('ol-host-eor-btns').style.display = OL.isHost ? 'flex':'none';
+    document.getElementById('ol-eor-sub').textContent = OL.isHost ? 'Voulez-vous voter ?' : "En attente de l'hôte…";
+    document.querySelectorAll('#ol-cs-progress .cs-dot').forEach(d=>d.className='cs-dot done');
+    olRenderSpeakingList(room);
+  }
+  else if(room.phase==='vote'){
+    document.getElementById('ol-phase-talk').style.display = 'none';
+    document.getElementById('ol-phase-vote').style.display = 'block';
+    // Reset résultats si nouveau vote (nouvelle élimination)
+    olRenderVote(room, alive);
+  }
+}
+
+function olRenderTalk(room, alive){
+  const speakerIdx    = room.speakerIdx || 0;
+  const aliveOrder    = room.speakingOrder.filter(i => room.players[i].alive);
+  const currentPIdx   = aliveOrder[speakerIdx];
+  const currentPlayer = room.players[currentPIdx];
+  const isMyTurn      = currentPIdx === OL.myIndex;
+
+  document.getElementById('ol-cs-name').textContent = currentPlayer ? currentPlayer.name : '-';
+
+  const startWrap = document.getElementById('ol-cs-start-wrap');
+  const passWrap  = document.getElementById('ol-cs-pass-wrap');
+  const waitMsg   = document.getElementById('ol-cs-wait-msg');
+
+  if(isMyTurn && !_olChronoTimer){
+    OL._passLocked = false; // reset verrou pour le nouveau tour
+    olCsResetChrono();
+    startWrap.style.display = 'block';
+    passWrap.style.display  = 'none';
+    if(waitMsg) waitMsg.textContent = '';
+  } else if(!isMyTurn){
+    startWrap.style.display = 'none';
+    passWrap.style.display  = 'none';
+    if(waitMsg) waitMsg.textContent = `C'est au tour de ${currentPlayer?.name||''}…`;
+  }
+
+  // Progress dots
+  const prog = document.getElementById('ol-cs-progress');
+  prog.innerHTML = aliveOrder.map((pi,i) =>
+    `<div class="cs-dot ${i < speakerIdx ? 'done' : i === speakerIdx ? 'current' : ''}" title="${escHtml(room.players[pi].name)}"></div>`
+  ).join('');
+
+  olRenderSpeakingList(room);
+}
+
+function olRenderSpeakingList(room){
+  const speakerIdx = room.speakerIdx || 0;
+  const aliveOrder = room.speakingOrder.filter(i => room.players[i].alive);
+  const el = document.getElementById('ol-speaking-list');
+  if(!el) return;
+  el.innerHTML = aliveOrder.map((pi,pos)=>{
+    const p    = room.players[pi];
+    const isMe = pi === OL.myIndex;
+    const cls  = pos < speakerIdx ? 's-done' : pos === speakerIdx ? 's-current' : '';
+    const tag  = pos < speakerIdx ? '✅' : pos === speakerIdx ? '🎤' : '⏳';
+    return `<div class="speaking-item ${cls}">
+      <div class="speaking-num">${pos+1}</div>
+      <div class="speaking-name">${escHtml(p.name)}${isMe?' <span style="color:var(--y);font-size:.7rem">← TOI</span>':''}</div>
+      <div class="speaking-tag">${tag}</div>
+    </div>`;
+  }).join('');
+}
+
+async function olGoVote(){
+  if(_olChronoTimer){ clearInterval(_olChronoTimer); _olChronoTimer=null; }
+  const room = await olRead(OL.roomCode);
+  if(!room) return;
+  room.phase   = 'vote';
+  room.players = room.players.map(p=>({...p,voted:false,vote:null}));
+  OL.voteSubmitted = false;
+  _olSelectedVote  = -1;
+  OL._elimTarget   = -1;
+  room.ts = Date.now();
+  await olWrite(OL.roomCode, room);
+}
+
+let _olSelectedVote=-1;
+
+function olRenderVote(room,alive){
+  OL.voteSubmitted=room.players[OL.myIndex]?.voted||false;
+  const el=document.getElementById('ol-vote-list');
+  // Reset résultats (ancienne partie)
+  const resultsEl = document.getElementById('ol-vote-results');
+  if(resultsEl) resultsEl.style.display='none';
+  const elimBtn = document.getElementById('ol-host-elim-btn');
+  if(elimBtn) elimBtn.style.display='none';
+
+  if(!OL.voteSubmitted){
+    el.innerHTML=alive.map(p=>`
+      <div class="vote-item ${_olSelectedVote===p.idx?'selected':''}" onclick="olClickVote(${p.idx},this)">
+        <div class="vote-name">${escHtml(p.name)}</div>
+        <div class="vote-circle">${_olSelectedVote===p.idx?'✓':''}</div>
+      </div>`).join('');
+    document.getElementById('ol-vote-btn-wrap').style.display='block';
+    document.getElementById('ol-vote-sent').classList.remove('show');
+  } else {
+    el.innerHTML='';
+    document.getElementById('ol-vote-btn-wrap').style.display='none';
+    document.getElementById('ol-vote-sent').classList.add('show');
+  }
+
+  // Résultats (host seulement quand tout le monde a voté)
+  if(OL.isHost){
+    const aliveCount=room.players.filter(p=>p.alive).length;
+    const totalVoted=room.players.filter(p=>p.alive&&p.voted).length;
+    if(totalVoted>=aliveCount){
+      const voteCounts={};
+      room.players.forEach(p=>{ if(p.alive&&p.voted&&p.vote!=null) voteCounts[p.vote]=(voteCounts[p.vote]||0)+1; });
+      const maxV=Math.max(0,...Object.values(voteCounts));
+      document.getElementById('ol-vote-results').style.display='block';
+      document.getElementById('ol-tally').innerHTML=alive.map(p=>{
+        const v=voteCounts[p.idx]||0;
+        const top=v===maxV&&maxV>0;
+        return `<div class="tally-row ${top?'top':''}">
+          <div style="width:110px;font-weight:900;font-size:.88rem">${escHtml(p.name)}</div>
+          <div class="tally-bar-wrap"><div class="tally-bar" style="width:${aliveCount?v/aliveCount*100:0}%"></div></div>
+          <div style="font-weight:900;color:${top?'var(--r)':'var(--text2)'}">${v} vote${v>1?'s':''}</div>
+        </div>`;
+      }).join('');
+      document.getElementById('ol-host-elim-btn').style.display='block';
+      const topEntry=Object.entries(voteCounts).sort((a,b)=>b[1]-a[1])[0];
+      OL._elimTarget=topEntry?parseInt(topEntry[0]):-1;
+    }
+  }
+}
+
+function olClickVote(idx,el){
+  if(OL.voteSubmitted) return;
+  SFX.vote();
+  _olSelectedVote=idx;
+  document.querySelectorAll('#ol-vote-list .vote-item').forEach(e=>{
+    e.classList.remove('selected'); e.querySelector('.vote-circle').textContent='';
+  });
+  el.classList.add('selected'); el.querySelector('.vote-circle').textContent='✓';
+}
+
+async function olSubmitVote(){
+  if(_olSelectedVote<0){
+    SFX.error();
+    const e=document.getElementById('ol-vote-err');
+    e.textContent='❌ Choisissez un joueur.'; e.classList.add('show'); return;
+  }
+  SFX.voteConfirm();
+  document.getElementById('ol-vote-err').classList.remove('show');
+  const room=await olRead(OL.roomCode);
+  if(!room) return;
+  room.players[OL.myIndex].vote=_olSelectedVote;
+  room.players[OL.myIndex].voted=true;
+  OL.voteSubmitted=true;
+  await olWrite(OL.roomCode,room);
+  document.getElementById('ol-vote-btn-wrap').style.display='none';
+  document.getElementById('ol-vote-sent').classList.add('show');
+}
+
+async function olDoElim(){
+  const idx=OL._elimTarget;
+  if(idx<0) return;
+  const room=await olRead(OL.roomCode);
+  if(!room) return;
+  room.players[idx].alive=false;
+  room.elimTarget=idx;
+
+  // Vérifier victoire
+  const aliveIdx=room.players.map((p,i)=>p.alive?i:-1).filter(i=>i>=0);
+  const ucAlive =aliveIdx.filter(i=>room.assignments[i]?.role==='undercover');
+  const mwAlive =aliveIdx.filter(i=>room.assignments[i]?.role==='mrwhite');
+  const civAlive=aliveIdx.filter(i=>room.assignments[i]?.role==='civil');
+  const impostors=ucAlive.length+mwAlive.length;
+  const elimRole=room.assignments[idx]?.role;
+
+  if(ucAlive.length===0&&mwAlive.length===0){
+    room.phase='victory'; room.winner='civil';
+  } else if(impostors>=civAlive.length){
+    room.phase='victory'; room.winner=ucAlive.length>0?'undercover':'mrwhite';
+  } else if(elimRole==='mrwhite'){
+    room.phase='mrwhite'; room.mrwhiteIdx=idx;
+  } else {
+    room.phase='elim';
+    room.round++;
+    room.speakerIdx=0;
+    room.players=room.players.map(p=>({...p,voted:false,vote:null}));
+  }
+  await olWrite(OL.roomCode,room);
+}
+
+async function olShowElim(room){
+  const idx=room.elimTarget;
+  const p=room.players[idx];
+  const asgn=room.assignments[idx];
+  const splash=document.getElementById('elim-splash');
+  splash.className=`elim-splash ${asgn.role}`;
+  document.getElementById('elim-emoji').textContent=asgn.role==='undercover'?'🔴':asgn.role==='mrwhite'?'⬜':'🟢';
+  document.getElementById('elim-name').textContent=p.name;
+  document.getElementById('elim-role').textContent=asgn.role==='civil'?'🟢 CIVIL':asgn.role==='undercover'?'🔴 UNDERCOVER':'⬜ MR WHITE';
+  document.getElementById('elim-word').innerHTML=asgn.role==='mrwhite'?'Il ne connaissait pas le mot !':'Son personnage : <span>'+escHtml(asgn.word||'')+'</span>';
+  document.getElementById('elim-info').innerHTML=`<span>▶️</span><span>${room.players.filter(p=>p.alive).length} joueurs restants</span>`;
+  const cont=document.getElementById('btn-elim-continue');
+  cont.textContent='Continuer →';
+  cont.onclick=async()=>{
+    if(OL.isHost){
+      // Seul l'hôte écrit la transition vers talk
+      const r=await olRead(OL.roomCode);
+      if(r&&(r.phase==='elim')){
+        r.phase='talk';
+        r.speakerIdx=0;
+        r.ts=Date.now();
+        await olWrite(OL.roomCode,r);
+      }
+    }
+    // Tout le monde retourne au jeu — le poll synchronise
+    showScreen('screen-ol-game');
+    olPoll();
+  };
+  // SFX + flash
+  if(asgn.role==='undercover'||asgn.role==='mrwhite') SFX.elimUnder();
+  else SFX.elimCivil();
+  flashScreen(asgn.role==='undercover'?'#ff2255':asgn.role==='mrwhite'?'#ffffff':'#00ff88');
+  showScreen('screen-elimination');
+}
+
+function olShowVictory(room){
+  // Ne pas stopper le poll pour les non-hôtes — ils doivent recevoir la relance
+  if(OL.isHost) olStopPoll();
+  // Les non-hôtes continuent à poller pour détecter phase='lobby'
+  const w=room.winner;
+  const emoji={civil:'🎉',undercover:'😈',mrwhite:'🤍'};
+  const title={civil:'CIVILS GAGNENT !',undercover:'UNDERCOVER GAGNE !',mrwhite:'MR WHITE GAGNE !'};
+  const sub={civil:'Les civils ont démasqué tous les imposteurs !',undercover:'Les undercovers ont semé la confusion !',mrwhite:'Mr White a deviné le personnage civil !'};
+  document.getElementById('v-emoji').textContent=emoji[w];
+  const vt=document.getElementById('v-title');
+  vt.textContent=title[w]; vt.className='victory-title '+w;
+  document.getElementById('v-sub').textContent=sub[w];
+  document.getElementById('v-civil-word').textContent=room.civilWord;
+  document.getElementById('v-under-word').textContent=room.undercoverWord;
+  document.getElementById('recap-list').innerHTML=room.players.map((p,i)=>{
+    const a=room.assignments[i];
+    const badge=a.role==='civil'?'<span class="badge badge-civil">Civil</span>':a.role==='undercover'?'<span class="badge badge-undercover">Undercover</span>':'<span class="badge badge-mrwhite">Mr White</span>';
+    return `<div class="recap-item"><div><div class="recap-name">${escHtml(p.name)}</div><div class="recap-word">${a.word?escHtml(a.word):'—'}</div></div>${badge}</div>`;
+  }).join('');
+  if(w==='civil'){ spawnConfetti(); flashScreen('#00ff88',400); SFX.victory(); }
+  else if(w==='mrwhite'){ flashScreen('#ffffff',300); SFX.victory(); }
+  else { flashScreen('#ff2255',400); SFX.defeat(); }
+  // Boutons adaptés selon le rôle (hôte/joueur)
+  document.getElementById('victory-btns-online').style.display='flex';
+  document.getElementById('victory-btns-offline').style.display='none';
+  document.getElementById('victory-host-btns').style.display=OL.isHost?'block':'none';
+  document.getElementById('victory-player-btns').style.display=OL.isHost?'none':'block';
+  showScreen('screen-victory');
+}
+
+async function checkMrWhite(){
+  const room=await olRead(OL.roomCode).catch(()=>null);
+  const guess=document.getElementById('mrw-input').value.trim().toLowerCase();
+  if(!room){
+    // Mode offline
+    const civil=state.civilWord.toLowerCase();
+    const matches=guess.length>0&&(guess===civil||civil.includes(guess)||guess.includes(civil));
+    const wc=checkWinConditions(); showVictory(matches?{winner:'mrwhite',reason:'Mr White a deviné !'}:(wc||{winner:'civil',reason:'Fin de partie !'}));
+    return;
+  }
+  // Mode online
+  const civil=room.civilWord.toLowerCase();
+  const matches=guess.length>0&&(guess===civil||civil.includes(guess)||guess.includes(civil));
+  const r2=await olRead(OL.roomCode);
+  r2.phase='victory';
+  r2.winner=matches?'mrwhite':'civil';
+  await olWrite(OL.roomCode,r2);
+  olShowVictory(r2);
+}
+
+
+// ── Rejouer / Accueil depuis Victory ──────────────────────────────────
+async function onRejouer(){
+  if(_olChronoTimer){ clearInterval(_olChronoTimer); _olChronoTimer=null; }
+  
+  // Si on était en ligne → remettre la room en lobby pour rejouer
+  if(OL.roomCode && OL.isHost){
+    const room = await olRead(OL.roomCode);
+    if(room){
+      // Reset room en lobby avec les mêmes joueurs
+      room.phase = 'lobby';
+      room.assignments = [];
+      room.civilWord = '';
+      room.undercoverWord = '';
+      room.speakerIdx = 0;
+      room.elimTarget = -1;
+      room.winner = null;
+      room.round = 1;
+      room.speakingOrder = [];
+      room.players = room.players.map(p=>({...p, alive:true, ready:false, voted:false, vote:null}));
+      room.ts = Date.now();
+      await olWrite(OL.roomCode, room);
+      // L'hôte retourne à l'écran de config de room
+      OL.voteSubmitted=false; _pollFailCount=0; _olSelectedVote=-1;
+      OL._lastElimTarget=-99; OL._elimTarget=-1; OL._passLocked=false;
+      if(_olChronoTimer){ clearInterval(_olChronoTimer); _olChronoTimer=null; }
+      renderOlCategories();
+      showScreen('screen-ol-host');
+      olStartPoll();
+      return;
+    }
+  }
+  
+  if(OL.roomCode && !OL.isHost){
+    // Les non-hôtes attendent que l'hôte relance
+    OL.voteSubmitted=false; _pollFailCount=0; _olSelectedVote=-1;
+    OL._lastElimTarget=-99;
+    // Relancer le poll s'il était stoppé
+    if(!OL.pollTimer) olStartPoll();
+    showScreen('screen-ol-wait');
+    return;
+  }
+  
+  // Mode offline → retour au setup
+  showScreen('screen-setup');
+}
+
+function onAccueil(){
+  olStopPoll();
+  if(_olChronoTimer){ clearInterval(_olChronoTimer); _olChronoTimer=null; }
+  OL.roomCode=null; OL.myName=null; OL.isHost=false; OL.myIndex=-1;
+  showScreen('screen-home');
+}
+
+
+// ══════════════════════════════════════════
+// SCREEN FLASH EFFECT
+// ══════════════════════════════════════════
+function flashScreen(color='#ffffff', dur=200){
+  const el = document.createElement('div');
+  el.style.cssText = `position:fixed;inset:0;background:${color};opacity:.35;z-index:9997;pointer-events:none;animation:flashOut ${dur}ms ease forwards`;
+  if(!document.getElementById('flash-style')){
+    const s=document.createElement('style');
+    s.id='flash-style';
+    s.textContent='@keyframes flashOut{from{opacity:.35}to{opacity:0}}';
+    document.head.appendChild(s);
+  }
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), dur+50);
+}
+
+
+// ══════════════════════════════════════════════════════════════════════
+// DISCORD ACTIVITY INTEGRATION
+// ══════════════════════════════════════════════════════════════════════
+let discordSdk    = null;
+let discordUser   = null;
+let isDiscordActivity = false;
+
+async function initDiscord(){
+  // 1. Pas dans Discord → mode standalone normal
+  if(typeof DiscordSDK === 'undefined'){
+    console.log('[Discord] Mode standalone — pas dans Discord');
+    return;
+  }
+
+  try {
+    isDiscordActivity = true;
+
+    // 2. Récupérer le CLIENT_ID depuis le serveur (jamais hardcodé)
+    const cidRes = await fetch('/api/client-id');
+    const { client_id } = await cidRes.json();
+    if(!client_id){
+      console.warn('[Discord] CLIENT_ID manquant — vérifie les variables Railway');
+      isDiscordActivity = false;
+      return;
+    }
+
+    // 3. Init SDK + attendre que Discord soit prêt
+    discordSdk = new DiscordSDK(client_id);
+    await discordSdk.ready();
+    console.log('[Discord] SDK prêt ✅');
+
+    // 4. OAuth2 — autoriser l'app
+    const { code } = await discordSdk.commands.authorize({
+      client_id,
+      response_type: 'code',
+      state: '',
+      prompt: 'none',
+      scope: ['identify', 'guilds.members.read'],
+    });
+
+    // 5. Échanger le code contre un token (côté serveur)
+    const tokenRes = await fetch('/api/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code }),
+    });
+    const { access_token, error } = await tokenRes.json();
+    if(error || !access_token){
+      throw new Error('Token exchange failed: ' + (error || 'unknown'));
+    }
+
+    // 6. Authentifier le SDK
+    await discordSdk.commands.authenticate({ access_token });
+
+    // 7. Récupérer l'utilisateur courant
+    const userRes = await fetch('https://discord.com/api/users/@me', {
+      headers: { Authorization: `Bearer ${access_token}` },
+    });
+    discordUser = await userRes.json();
+    console.log('[Discord] Connecté en tant que:', discordUser.username);
+
+    // 8. Pré-remplir le nom du joueur avec le pseudo Discord
+    const displayName = discordUser.global_name || discordUser.username;
+    document.getElementById('ol-join-name').value = displayName;
+    // Pour l'hôte, le nom sera "displayName" au lieu de "Hôte"
+    window._discordDisplayName = displayName;
+
+    // 9. Récupérer les participants du salon vocal
+    try {
+      const { participants } = await discordSdk.commands.getInstanceConnectedParticipants();
+      console.log('[Discord] Joueurs dans le salon:', participants.length);
+      window._discordParticipants = participants;
+    } catch(e) {
+      console.log('[Discord] Impossible de récupérer les participants:', e.message);
+    }
+
+    // 10. Afficher le badge Discord
+    _showDiscordBadge(discordUser);
+
+    // 11. Modifier olCreateRoom pour utiliser le vrai nom Discord
+    _patchOlForDiscord();
+
+  } catch(err){
+    console.error('[Discord] Erreur init:', err.message);
+    isDiscordActivity = false;
+  }
+}
+
+function _showDiscordBadge(user){
+  const el = document.createElement('div');
+  el.id = 'discord-badge';
+  el.style.cssText = [
+    'position:fixed;top:8px;right:8px;z-index:9990',
+    'display:flex;align-items:center;gap:5px',
+    'background:rgba(88,101,242,.15);border:1px solid rgba(88,101,242,.35)',
+    'border-radius:5px;padding:4px 9px',
+    'font-family:var(--font-pixel);font-size:.42rem;color:#7289da;letter-spacing:.8px',
+    'pointer-events:none'
+  ].join(';');
+  const avatarUrl = user.avatar
+    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
+    : null;
+  el.innerHTML = (avatarUrl
+    ? `<img src="${avatarUrl}" width="16" height="16" style="border-radius:3px;image-rendering:pixelated">`
+    : '🎮')
+    + ` ${escHtml(user.global_name || user.username)}`;
+  document.body.appendChild(el);
+}
+
+function _patchOlForDiscord(){
+  // Remplacer "Hôte" par le vrai nom Discord quand on crée une room
+  const name = window._discordDisplayName;
+  if(!name) return;
+
+  // Override olCreateRoom pour injecter le nom Discord
+  const _origCreate = olCreateRoom;
+  window.olCreateRoom = async function(){
+    // Temporairement on stocke le nom pour que olHostStart l'utilise
+    window._olHostNameOverride = name;
+    await _origCreate();
+  };
+
+  // Override olHostStart pour utiliser le bon nom
+  const _origHostStart = olHostStart;
+  window.olHostStart = async function(){
+    const override = window._olHostNameOverride;
+    if(override){
+      // Patch: remplacer 'Hôte' dans la room
+      const room = await olRead(OL.roomCode);
+      if(room && room.players[0]?.name === 'Hôte'){
+        room.players[0].name = override;
+        OL.myName = override;
+        await olWrite(OL.roomCode, room);
+      }
+    }
+    await _origHostStart();
+  };
+}
+
+// ══════════════════════════════════════════
+// PIXEL CHARACTERS — background animation
+// ══════════════════════════════════════════
+const PIXEL_CHARS_SVG = [
+  // Luffy chapeau
+  `<svg viewBox="0 0 16 16" width="40" height="40"><rect x="3" y="2" width="10" height="2" fill="#cc0000"/><rect x="1" y="4" width="14" height="1" fill="#cc0000"/><rect x="4" y="5" width="8" height="6" fill="#ffcc88"/><rect x="5" y="7" width="2" height="2" fill="#222"/><rect x="9" y="7" width="2" height="2" fill="#222"/><rect x="6" y="10" width="4" height="1" fill="#cc4400"/><rect x="3" y="11" width="10" height="2" fill="#ffcc88"/><rect x="2" y="13" width="12" height="1" fill="#cc0000"/></svg>`,
+  // Naruto
+  `<svg viewBox="0 0 16 16" width="40" height="40"><rect x="4" y="1" width="8" height="2" fill="#ffcc00"/><rect x="3" y="3" width="10" height="6" fill="#ffcc88"/><rect x="4" y="5" width="2" height="2" fill="#333"/><rect x="10" y="5" width="2" height="2" fill="#333"/><rect x="5" y="8" width="6" height="1" fill="#cc4400"/><rect x="3" y="9" width="1" height="2" fill="#ff8800"/><rect x="12" y="9" width="1" height="2" fill="#ff8800"/><rect x="4" y="11" width="8" height="3" fill="#ee8800"/></svg>`,
+  // Batman
+  `<svg viewBox="0 0 16 16" width="40" height="40"><rect x="1" y="2" width="3" height="4" fill="#222"/><rect x="12" y="2" width="3" height="4" fill="#222"/><rect x="4" y="1" width="8" height="7" fill="#333"/><rect x="5" y="3" width="2" height="2" fill="#ffee88"/><rect x="9" y="3" width="2" height="2" fill="#ffee88"/><rect x="4" y="8" width="8" height="6" fill="#222"/><rect x="3" y="9" width="10" height="1" fill="#444"/><rect x="6" y="6" width="4" height="1" fill="#ffee88"/></svg>`,
+  // Goku
+  `<svg viewBox="0 0 16 16" width="40" height="40"><rect x="3" y="0" width="10" height="3" fill="#111"/><rect x="4" y="3" width="8" height="5" fill="#ffcc88"/><rect x="5" y="5" width="2" height="2" fill="#222"/><rect x="9" y="5" width="2" height="2" fill="#222"/><rect x="6" y="7" width="4" height="1" fill="#cc3300"/><rect x="3" y="8" width="10" height="5" fill="#ee8800"/><rect x="5" y="8" width="6" height="1" fill="#ffaa00"/></svg>`,
+  // Spider-Man
+  `<svg viewBox="0 0 16 16" width="40" height="40"><rect x="4" y="2" width="8" height="7" fill="#cc0000"/><rect x="5" y="3" width="2" height="3" fill="#fff"/><rect x="9" y="3" width="2" height="3" fill="#fff"/><rect x="4" y="9" width="4" height="4" fill="#cc0000"/><rect x="8" y="9" width="4" height="4" fill="#0000cc"/><rect x="3" y="5" width="1" height="3" fill="#cc0000"/><rect x="12" y="5" width="1" height="3" fill="#cc0000"/></svg>`,
+  // Pikachu
+  `<svg viewBox="0 0 16 16" width="40" height="40"><rect x="2" y="0" width="2" height="4" fill="#222"/><rect x="12" y="0" width="2" height="4" fill="#222"/><rect x="4" y="3" width="8" height="7" fill="#ffee00"/><rect x="5" y="5" width="2" height="2" fill="#222"/><rect x="9" y="5" width="2" height="2" fill="#222"/><rect x="7" y="8" width="2" height="1" fill="#222"/><rect x="2" y="7" width="2" height="2" fill="#ff6666"/><rect x="12" y="7" width="2" height="2" fill="#ff6666"/><rect x="4" y="10" width="8" height="3" fill="#ffee00"/></svg>`,
+  // Joker card
+  `<svg viewBox="0 0 16 16" width="40" height="40"><rect x="2" y="1" width="12" height="14" fill="#fff"/><rect x="3" y="2" width="10" height="12" fill="#f5f5f5"/><rect x="4" y="3" width="3" height="1" fill="#222"/><rect x="9" y="3" width="3" height="1" fill="#222"/><rect x="6" y="7" width="4" height="4" fill="#cc0000"/><rect x="7" y="6" width="2" height="6" fill="#cc0000"/><rect x="4" y="12" width="3" height="1" fill="#222"/><rect x="9" y="12" width="3" height="1" fill="#222"/></svg>`,
+  // Star
+  `<svg viewBox="0 0 16 16" width="36" height="36"><polygon points="8,1 10,6 15,6 11,9 13,14 8,11 3,14 5,9 1,6 6,6" fill="#ffe600"/></svg>`,
+];
+
+function initPixelChars(){
+  const container = document.getElementById('pixel-bg-chars');
+  if(!container) return;
+  for(let i=0;i<12;i++){
+    const el = document.createElement('div');
+    el.className = 'px-char';
+    el.innerHTML = PIXEL_CHARS_SVG[i % PIXEL_CHARS_SVG.length];
+    const left = Math.random()*90;
+    const dur  = 8 + Math.random()*14;
+    const del  = Math.random()*10;
+    const size = 0.6 + Math.random()*0.8;
+    el.style.cssText = `left:${left}%;animation-duration:${dur}s;animation-delay:-${del}s;transform:scale(${size})`;
+    container.appendChild(el);
+  }
+}
+
+// ══════════════════════════════════════════
+// ENHANCED SFX
+// ══════════════════════════════════════════
+// Extra SFX methods wired to game events
+function sfxPixelClick(){
+  sfxTone(1200,'square',0.06,0.04);
+}
+function sfxJoin(){
+  sfxTone(500,'square',0.08,0.05,0);
+  sfxTone(700,'square',0.1,0.07,0.06);
+  sfxTone(900,'square',0.08,0.05,0.13);
+}
+
+// Override SFX.click for pixel feel
+const _origClick = SFX.click;
+SFX.click = function(){ sfxPixelClick(); };
+
+// ══════════════════════════════════════════
+// SCREEN TRANSITION SOUND
+// ══════════════════════════════════════════
+// Screen transition with pixel click sound
+const _origShowScreen = showScreen;
+showScreen = function(id){
+  sfxPixelClick();
+  _origShowScreen(id);
+};
+
+async function init(){
+  ['Alice','Bob','Charlie','Diana'].forEach(n=>state.players.push(n));
+  renderPlayers();
+  updateRolesInfo();
+  renderCategories();
+  initPixelChars();
+  // Init Discord if running as Activity
+  await initDiscord();
+}
+
+init();
+</script>
+
+<!-- ════ MODE SELECT ════ -->
+<div class="screen" id="screen-mode">
+  <div style="padding:12px 0 6px;display:flex;align-items:center;gap:10px">
+    <button class="btn btn-ghost btn-sm" style="width:auto" onclick="showScreen('screen-home')">←</button>
+  </div>
+  <div class="mode-wrap" style="margin:auto">
+    <div class="mode-title">COMMENT<br>JOUER ?</div>
+    <div class="mode-card mc-off" onclick="showScreen('screen-setup')">
+      <span class="mode-card-icon">📱</span>
+      <div class="mode-card-name">HORS LIGNE</div>
+      <div class="mode-card-desc">Tout le monde sur le même téléphone. On se passe l'écran pour voir son personnage secret.</div>
+    </div>
+    <div class="mode-card mc-on" onclick="showScreen('screen-ol-choose')">
+      <span class="mode-new-badge">NOUVEAU</span>
+      <span class="mode-card-icon">🌐</span>
+      <div class="mode-card-name">EN LIGNE</div>
+      <div class="mode-card-desc">Chaque joueur sur son propre téléphone. Créez une room ou rejoignez-en une avec un code. Personne ne voit la carte des autres.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ ONLINE CHOOSE host/join ════ -->
+<div class="screen" id="screen-ol-choose">
+  <div style="padding:12px 0 6px;display:flex;align-items:center;gap:10px">
+    <button class="btn btn-ghost btn-sm" style="width:auto" onclick="showScreen('screen-mode')">←</button>
+    <div style="font-family:var(--font-h);font-size:1.8rem;letter-spacing:2px">EN LIGNE</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px;margin-top:20px">
+    <div class="mode-card mc-on" onclick="olCreateRoom()">
+      <span class="mode-card-icon">🏠</span>
+      <div class="mode-card-name">CRÉER UNE ROOM</div>
+      <div class="mode-card-desc">Tu es l'hôte. Tu configures la partie et lances le jeu quand tout le monde est prêt.</div>
+    </div>
+    <div class="mode-card mc-off" onclick="showScreen('screen-ol-join')">
+      <span class="mode-card-icon">🔑</span>
+      <div class="mode-card-name">REJOINDRE</div>
+      <div class="mode-card-desc">Entre le code 4 lettres que l'hôte t'a partagé et rejoins la partie.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ HOST SETUP ════ -->
+<div class="screen" id="screen-ol-host">
+  <div style="padding:12px 0 6px;display:flex;align-items:center;gap:10px">
+    <button class="btn btn-ghost btn-sm" style="width:auto" onclick="olLeave()">←</button>
+    <div style="font-family:var(--font-h);font-size:1.8rem;letter-spacing:2px">MA ROOM</div>
+  </div>
+  <div style="overflow-y:auto;flex:1">
+    <div class="room-code-box">
+      <div style="font-size:.75rem;color:var(--text2);margin-bottom:4px">CODE DE LA ROOM</div>
+      <div class="room-code-big" id="ol-room-code">????</div>
+      <button class="btn btn-ghost btn-sm mt8" style="width:auto;margin:0 auto" onclick="olCopyCode()">📋 Copier</button>
+    </div>
+    <div class="sync-bar"><div class="ol-dot green pulse"></div><span>En attente des joueurs…</span><span id="ol-host-count" style="margin-left:auto">0 connecté</span></div>
+    <div class="section-label">👥 joueurs</div>
+    <div id="ol-host-players"></div>
+
+    <div class="divider"></div>
+    <div class="section-label">🎭 rôles</div>
+    <div class="roles-grid">
+      <div class="role-box">
+        <div class="role-box-label">🔴 Undercover</div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="olChangeRole('undercover',-1)">−</button>
+          <div class="role-val" id="ol-val-uc">1</div>
+          <button class="stepper-btn" onclick="olChangeRole('undercover',1)">+</button>
+        </div>
+      </div>
+      <div class="role-box">
+        <div class="role-box-label">⬜ Mr White</div>
+        <div class="stepper">
+          <button class="stepper-btn" onclick="olChangeRole('mrwhite',-1)">−</button>
+          <div class="role-val" id="ol-val-mw">0</div>
+          <button class="stepper-btn" onclick="olChangeRole('mrwhite',1)">+</button>
+        </div>
+      </div>
+    </div>
+    <div id="ol-roles-err" class="error-msg">❌ Trop de rôles spéciaux.</div>
+
+    <div class="divider"></div>
+    <div class="section-label">📚 catégories</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="selectAllCats()">Tout ✓</button>
+      <button class="btn btn-ghost btn-sm" style="flex:1" onclick="selectNoCats()">Rien ✕</button>
+    </div>
+    <div id="ol-categories"></div>
+
+    <div class="divider"></div>
+    <div id="ol-start-err" class="error-msg">❌ Minimum 3 joueurs.</div>
+    <div class="flex-col safe-bottom">
+      <button class="btn btn-primary" onclick="olHostStart()">🚀 LANCER LA PARTIE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ JOIN ════ -->
+<div class="screen" id="screen-ol-join">
+  <div style="padding:12px 0 6px;display:flex;align-items:center;gap:10px">
+    <button class="btn btn-ghost btn-sm" style="width:auto" onclick="showScreen('screen-ol-choose')">←</button>
+    <div style="font-family:var(--font-h);font-size:1.8rem;letter-spacing:2px">REJOINDRE</div>
+  </div>
+  <div class="card mt12">
+    <label>Ton prénom</label>
+    <input type="text" id="ol-join-name" placeholder="Ex: Alex" maxlength="20" style="margin-bottom:14px">
+    <label>Code de la room (4 lettres)</label>
+    <input type="text" id="ol-join-code" placeholder="ABCD" maxlength="4" class="code-input"
+      oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+    <div id="ol-join-err" class="error-msg mt8"></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="flex-col safe-bottom mt12">
+    <button class="btn btn-primary" onclick="olJoin()">▶ REJOINDRE</button>
+  </div>
+</div>
+
+<!-- ════ WAIT (joueur non-hôte) ════ -->
+<div class="screen" id="screen-ol-wait">
+  <div class="wait-bounce mt20">⏳</div>
+  <div style="font-family:var(--font-h);font-size:2rem;letter-spacing:2px;color:var(--b);margin-top:8px">EN ATTENTE</div>
+  <div style="font-size:.85rem;color:var(--text2);margin-top:6px;max-width:260px;line-height:1.6;text-align:center">
+    Connecté ! L'hôte va lancer la partie…
+  </div>
+  <div class="card mt20" style="width:100%;max-width:360px">
+    <div class="section-label">👥 dans la room</div>
+    <div id="ol-wait-players"></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="safe-bottom mt12" style="width:100%;max-width:360px">
+    <button class="btn btn-ghost" onclick="olLeave()">🚪 Quitter</button>
+  </div>
+</div>
+
+<!-- ════ CARD REVEAL (chaque joueur voit sa carte sur son téléphone) ════ -->
+<div class="screen" id="screen-ol-card">
+  <div style="padding:16px 0 10px;text-align:center">
+    <div style="font-family:var(--font-h);font-size:1.5rem;letter-spacing:2px;color:var(--p)">TON PERSONNAGE SECRET</div>
+    <div style="font-size:.78rem;color:var(--text2);margin-top:3px">Ne montre à personne !</div>
+  </div>
+  <div style="max-width:360px;width:100%;margin:0 auto">
+    <div class="dist-card">
+      <div class="dist-player-avatar" id="ol-card-avatar">?</div>
+      <div class="dist-player-name" id="ol-card-pname">-</div>
+      <div class="secret-card blurred" id="ol-secret-card" onclick="olRevealCard()">
+        <div class="secret-role-tag">🎭 TON PERSONNAGE</div>
+        <div class="secret-character" id="ol-secret-char">???</div>
+        <div class="reveal-tap-hint">👆 Appuie pour révéler</div>
+      </div>
+      <div class="reveal-actions" id="ol-reveal-actions">
+        <div style="font-size:.78rem;color:var(--text2);text-align:center">✅ Mémorise bien !</div>
+        <button class="btn btn-success" onclick="olCardDone()">J'ai mémorisé ✓</button>
+      </div>
+      <div id="ol-reveal-btn-wrap">
+        <button class="btn btn-secondary" onclick="olRevealCard()">👁 Voir mon personnage</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ ONLINE GAME ════ -->
+<div class="screen" id="screen-ol-game">
+  <div class="sync-bar">
+    <div class="ol-dot green pulse"></div>
+    <span id="ol-game-sync">En ligne</span>
+    <span style="margin-left:auto;color:var(--b);font-weight:700" id="ol-game-roomlabel"></span>
+  </div>
+  <div class="game-topbar">
+    <div class="game-round-badge" id="ol-round-badge">TOUR 1</div>
+    <div class="game-alive-count" id="ol-alive-count">-</div>
+  </div>
+  <div class="divider" style="margin:0 0 10px"></div>
+
+  <!-- PHASE PAROLE -->
+  <div id="ol-phase-talk">
+    <!-- Speaker card identique au mode offline -->
+    <div class="current-speaker-card" id="ol-cs-card">
+      <div class="cs-label">C'est au tour de</div>
+      <div class="cs-name" id="ol-cs-name">-</div>
+      <div class="cs-chrono-wrap">
+        <svg class="cs-ring" viewBox="0 0 80 80">
+          <circle class="cs-ring-bg" cx="40" cy="40" r="34"/>
+          <circle class="cs-ring-bar" id="ol-cs-ring-bar" cx="40" cy="40" r="34"/>
+        </svg>
+        <div class="cs-time" id="ol-cs-time">60</div>
+      </div>
+      <!-- START visible seulement au joueur actif -->
+      <div id="ol-cs-start-wrap">
+        <button class="btn btn-primary" id="ol-btn-cs-start" onclick="olCsStart()">▶ START</button>
+      </div>
+      <div id="ol-cs-pass-wrap" style="display:none">
+        <button class="btn btn-success" onclick="olCsPass()">✅ J'ai parlé — PASS →</button>
+      </div>
+      <div style="font-size:.75rem;color:var(--text2);text-align:center" id="ol-cs-wait-msg"></div>
+      <div class="cs-progress" id="ol-cs-progress"></div>
+    </div>
+    <div class="speaking-list mt10" id="ol-speaking-list"></div>
+
+    <!-- Fin de tour : host décide de voter ou pas -->
+    <div id="ol-end-of-round" style="display:none" class="mt12">
+      <div class="divider"></div>
+      <div style="text-align:center;margin-bottom:10px">
+        <div style="font-family:var(--font-h);font-size:1.5rem;letter-spacing:2px;color:var(--y)">FIN DU TOUR !</div>
+        <div style="font-size:.8rem;color:var(--text2);margin-top:3px" id="ol-eor-sub">En attente de l'hôte…</div>
+      </div>
+      <div id="ol-host-eor-btns" style="display:none" class="flex-col">
+        <button class="btn btn-primary" onclick="olGoVote()">🗳️ OUI — VOTER</button>
+        <button class="btn btn-ghost" onclick="olSkipVote()">⏭ NON — Rejouer un tour</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHASE VOTE -->
+  <div id="ol-phase-vote" style="display:none">
+    <div class="phase-bar">🗳️ Votez ! Appuyez sur le suspect.</div>
+    <div style="font-size:.8rem;color:var(--text2);margin-bottom:8px;text-align:center">Cliquez sur le joueur que vous pensez être l'imposteur</div>
+    <div class="vote-list" id="ol-vote-list"></div>
+    <div id="ol-vote-err" class="error-msg mt8"></div>
+    <div class="vote-sent-msg" id="ol-vote-sent">✅ Vote envoyé ! En attente des autres…</div>
+    <div id="ol-vote-btn-wrap" class="mt12">
+      <button class="btn btn-primary" onclick="olSubmitVote()">⚡ VALIDER MON VOTE</button>
+    </div>
+    <div id="ol-vote-results" style="display:none" class="mt12">
+      <div class="section-label">Résultats des votes</div>
+      <div id="ol-tally"></div>
+      <div id="ol-host-elim-btn" style="display:none" class="mt12">
+        <button class="btn btn-danger" onclick="olDoElim()">💀 ÉLIMINER CE JOUEUR</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer-copy">© COPYRIGHT BY TMK — ALL RIGHTS RESERVED</div>
+</body>
+</html>
