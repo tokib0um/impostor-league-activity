@@ -2970,24 +2970,53 @@ let discordSdk    = null;
 let discordUser   = null;
 let isDiscordActivity = false;
 
-async function initDiscord(){
-  // 1. Pas dans Discord → mode standalone normal
-  if(typeof DiscordSDK === 'undefined'){
-    console.log('[Discord] Mode standalone — pas dans Discord');
+async function initDiscord() {
+  // Vérifie qu'on est vraiment dans Discord
+  if (
+    typeof DiscordSDK === 'undefined' ||
+    !window.location.ancestorOrigins ||
+    ![...window.location.ancestorOrigins].some(o =>
+      o.includes('discord.com')
+    )
+  ) {
+    console.log('[Discord] Mode navigateur normal');
     return;
   }
 
   try {
     isDiscordActivity = true;
 
-    // 2. Récupérer le CLIENT_ID depuis le serveur (jamais hardcodé)
+    // Timeout de sécurité
+    const timeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Discord timeout')), 5000)
+    );
+
+    // CLIENT ID
     const cidRes = await fetch('/api/client-id');
     const { client_id } = await cidRes.json();
-    if(!client_id){
-      console.warn('[Discord] CLIENT_ID manquant — vérifie les variables Railway');
-      isDiscordActivity = false;
-      return;
+
+    if (!client_id) {
+      throw new Error('CLIENT_ID manquant');
     }
+
+    discordSdk = new DiscordSDK(client_id);
+
+    // IMPORTANT
+    await Promise.race([
+      discordSdk.ready(),
+      timeout
+    ]);
+
+    console.log('[Discord] SDK prêt');
+
+  } catch (err) {
+    console.error('[Discord] Init error:', err);
+
+    // IMPORTANT :
+    // ne jamais bloquer l'app
+    isDiscordActivity = false;
+  }
+}
 
     // 3. Init SDK + attendre que Discord soit prêt
     discordSdk = new DiscordSDK(client_id);
@@ -3408,3 +3437,20 @@ init();
 <div class="footer-copy">© COPYRIGHT BY TMK — ALL RIGHTS RESERVED</div>
 </body>
 </html>
+
+
+window.addEventListener('load', () => {
+  initDiscord().catch(console.error);
+});
+
+iframe {
+  pointer-events: auto !important;
+}
+
+body {
+  pointer-events: auto !important;
+}
+
+.screen {
+  pointer-events: auto;
+}
