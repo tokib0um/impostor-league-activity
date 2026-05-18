@@ -1399,8 +1399,10 @@ function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&l
 function spawnConfetti(){ confetti(); }
 
 function showScreen(id){
+  try{ sfxPixelClick(); }catch(e){}
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
 }
 
 function toast(msg, type=''){
@@ -3158,12 +3160,7 @@ SFX.click = function(){ sfxPixelClick(); };
 // ══════════════════════════════════════════
 // SCREEN TRANSITION SOUND
 // ══════════════════════════════════════════
-// Screen transition with pixel click sound
-const _origShowScreen = showScreen;
-showScreen = function(id){
-  sfxPixelClick();
-  _origShowScreen(id);
-};
+// SFX intégré directement dans showScreen
 
 async function init(){
   ['Alice','Bob','Charlie','Diana'].forEach(n=>state.players.push(n));
@@ -3171,8 +3168,8 @@ async function init(){
   updateRolesInfo();
   renderCategories();
   initPixelChars();
-  // Init Discord if running as Activity
-  await initDiscord();
+  // Init Discord si disponible — ne bloque JAMAIS le jeu
+  try{ await initDiscord(); }catch(e){ console.warn('[Discord] Init skipped:', e.message); }
 }
 
 init();
