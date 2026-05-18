@@ -2,6 +2,18 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="
+    default-src 'self' 'unsafe-inline' 'unsafe-eval'
+    https://*.discordsays.com
+    https://*.discordapp.com
+    https://discord.com
+    https://*.googleapis.com
+    https://*.gstatic.com
+    https://*.firebasedatabase.app
+    wss://*.firebasedatabase.app
+    https://undercover-3b721-default-rtdb.europe-west1.firebasedatabase.app
+    wss://undercover-3b721-default-rtdb.europe-west1.firebasedatabase.app;
+  ">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>IMPOSTOR LEAGUE — Pop Culture</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -794,6 +806,7 @@ label{display:block;font-size:.75rem;color:var(--text2);margin-bottom:5px;font-w
 </div>
 
 <script>
+
 'use strict';
 
 // ══════════════════════════════════════════
@@ -1399,7 +1412,8 @@ function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&l
 function spawnConfetti(){ confetti(); }
 
 function showScreen(id){
-  try{ sfxPixelClick(); }catch(e){}
+  // sfxPixelClick défini plus loin - on vérifie son existence
+  if(typeof sfxPixelClick === 'function') try{ sfxPixelClick(); }catch(e){}
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
@@ -2121,6 +2135,7 @@ const OL = {
   roomCode: null,
   _lastElimTarget: -99,
   _passLocked: false,
+  _discordHostName: null,
   myName:   null,
   isHost:   false,
   myIndex:  -1,
@@ -2153,7 +2168,7 @@ async function olCreateRoom(){
   }
 
   const code = olGenCode();
-  const hostName = 'Hôte';
+  const hostName = OL._discordHostName || 'Hôte';
   const room = {
     code, phase:'lobby',
     players:[{name:hostName, ready:false, voted:false, vote:null, alive:true}],
@@ -2271,7 +2286,7 @@ async function olLeave(){
   if(typeof _chronoTimer!=='undefined' && _chronoTimer){ clearInterval(_chronoTimer); _chronoTimer=null; }
   if(_olChronoTimer){ clearInterval(_olChronoTimer); _olChronoTimer=null; }
   if(OL.isHost && OL.roomCode){ await olDelete(OL.roomCode); }
-  OL.roomCode=null; OL.myName=null; OL.isHost=false; OL.myIndex=-1;
+  OL.roomCode=null; OL.myName=OL._discordHostName||null; OL.isHost=false; OL.myIndex=-1;
   OL.voteSubmitted=false; _pollFailCount=0; _olSelectedVote=-1;
   showScreen('screen-mode');
 }
@@ -2970,113 +2985,106 @@ let discordSdk    = null;
 let discordUser   = null;
 let isDiscordActivity = false;
 
-async function initDiscord() {
-  // Vérifie qu'on est vraiment dans Discord
-  if (
-    typeof DiscordSDK === 'undefined' ||
-    !window.location.ancestorOrigins ||
-    ![...window.location.ancestorOrigins].some(o =>
-      o.includes('discord.com')
-    )
-  ) {
-    console.log('[Discord] Mode navigateur normal');
+async function initDiscord(){
+  // Pas dans Discord → mode standalone normal (GitHub Pages, navigateur direct)
+  if(typeof DiscordSDK === 'undefined'){
+    console.log('[Discord] Mode standalone');
     return;
   }
 
-  try {
+  try{
     isDiscordActivity = true;
 
-    // Timeout de sécurité
-    const timeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Discord timeout')), 5000)
-    );
-
-    // CLIENT ID
-    const cidRes = await fetch('/api/client-id');
-    const { client_id } = await cidRes.json();
-
-    if (!client_id) {
-      throw new Error('CLIENT_ID manquant');
+    // ── Étape 1: Récupérer le CLIENT_ID depuis Railway ───────────────
+    let client_id = '';
+    try{
+      const cidRes = await fetch('/api/client-id');
+      const data   = await cidRes.json();
+      client_id    = data.client_id || '';
+    } catch(e){
+      console.warn('[Discord] /api/client-id inaccessible:', e.message);
+    }
+    if(!client_id){
+      console.warn('[Discord] CLIENT_ID vide — activité Discord non configurée');
+      isDiscordActivity = false;
+      return;
     }
 
-    discordSdk = new DiscordSDK(client_id);
-
-    // IMPORTANT
-    await Promise.race([
-      discordSdk.ready(),
-      timeout
-    ]);
-
-    console.log('[Discord] SDK prêt');
-
-  } catch (err) {
-    console.error('[Discord] Init error:', err);
-
-    // IMPORTANT :
-    // ne jamais bloquer l'app
-    isDiscordActivity = false;
-  }
-}
-
-    // 3. Init SDK + attendre que Discord soit prêt
+    // ── Étape 2: Init SDK ────────────────────────────────────────────
     discordSdk = new DiscordSDK(client_id);
     await discordSdk.ready();
-    console.log('[Discord] SDK prêt ✅');
+    console.log('[Discord] ✅ SDK prêt');
 
-    // 4. OAuth2 — autoriser l'app
+    // ── Étape 3: CRITICAL — patchUrlMappings ────────────────────────
+    // Discord proxifie TOUTES les requêtes via *.discordsays.com
+    // Sans ça, les fetch() vers /api/* et Firebase échouent dans l'iframe
+    if(discordSdk.patchUrlMappings){
+      discordSdk.patchUrlMappings([
+        // Notre serveur Railway → proxifié via Discord
+        { prefix: '/api', target: window.location.origin },
+        // Firebase Realtime Database → autorisé
+        { prefix: 'https://undercover-3b721-default-rtdb.europe-west1.firebasedatabase.app',
+          target: 'https://undercover-3b721-default-rtdb.europe-west1.firebasedatabase.app' },
+      ]);
+      console.log('[Discord] ✅ URL mappings patchés');
+    }
+
+    // ── Étape 4: OAuth2 authorization ───────────────────────────────
     const { code } = await discordSdk.commands.authorize({
       client_id,
       response_type: 'code',
       state: '',
       prompt: 'none',
-      scope: ['identify', 'guilds.members.read'],
+      scope: ['identify'],
     });
 
-    // 5. Échanger le code contre un token (côté serveur)
+    // ── Étape 5: Token exchange via notre serveur ────────────────────
     const tokenRes = await fetch('/api/token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code }),
     });
-    const { access_token, error } = await tokenRes.json();
-    if(error || !access_token){
-      throw new Error('Token exchange failed: ' + (error || 'unknown'));
+    const tokenData = await tokenRes.json();
+    if(!tokenData.access_token){
+      throw new Error('Token exchange failed: ' + (tokenData.error || 'unknown'));
     }
 
-    // 6. Authentifier le SDK
-    await discordSdk.commands.authenticate({ access_token });
+    // ── Étape 6: Authenticate SDK ────────────────────────────────────
+    await discordSdk.commands.authenticate({ access_token: tokenData.access_token });
+    console.log('[Discord] ✅ Authentifié');
 
-    // 7. Récupérer l'utilisateur courant
+    // ── Étape 7: Récupérer l'utilisateur ────────────────────────────
     const userRes = await fetch('https://discord.com/api/users/@me', {
-      headers: { Authorization: `Bearer ${access_token}` },
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
     });
     discordUser = await userRes.json();
-    console.log('[Discord] Connecté en tant que:', discordUser.username);
+    const displayName = discordUser.global_name || discordUser.username || 'Joueur';
+    console.log('[Discord] ✅ Connecté:', displayName);
 
-    // 8. Pré-remplir le nom du joueur avec le pseudo Discord
-    const displayName = discordUser.global_name || discordUser.username;
-    document.getElementById('ol-join-name').value = displayName;
-    // Pour l'hôte, le nom sera "displayName" au lieu de "Hôte"
+    // ── Étape 8: Pré-remplir nom Discord dans l'UI ───────────────────
+    const joinEl = document.getElementById('ol-join-name');
+    if(joinEl) joinEl.value = displayName;
     window._discordDisplayName = displayName;
+    OL.myName            = displayName;
+    OL._discordHostName  = displayName;
 
-    // 9. Récupérer les participants du salon vocal
-    try {
+    // ── Étape 9: Participants du salon vocal ─────────────────────────
+    try{
       const { participants } = await discordSdk.commands.getInstanceConnectedParticipants();
-      console.log('[Discord] Joueurs dans le salon:', participants.length);
-      window._discordParticipants = participants;
-    } catch(e) {
-      console.log('[Discord] Impossible de récupérer les participants:', e.message);
+      window._discordParticipants = participants || [];
+      console.log('[Discord] Participants:', window._discordParticipants.length);
+    }catch(e){
+      window._discordParticipants = [];
     }
 
-    // 10. Afficher le badge Discord
+    // ── Étape 10: Badge UI + patch noms ─────────────────────────────
     _showDiscordBadge(discordUser);
-
-    // 11. Modifier olCreateRoom pour utiliser le vrai nom Discord
     _patchOlForDiscord();
 
-  } catch(err){
-    console.error('[Discord] Erreur init:', err.message);
+  }catch(err){
+    console.error('[Discord] ❌ Erreur init:', err.message);
     isDiscordActivity = false;
+    // Le jeu continue normalement en mode standalone
   }
 }
 
@@ -3102,33 +3110,11 @@ function _showDiscordBadge(user){
 }
 
 function _patchOlForDiscord(){
-  // Remplacer "Hôte" par le vrai nom Discord quand on crée une room
+  // Stocker le nom Discord dans OL — olCreateRoom l'utilisera directement
   const name = window._discordDisplayName;
   if(!name) return;
-
-  // Override olCreateRoom pour injecter le nom Discord
-  const _origCreate = olCreateRoom;
-  window.olCreateRoom = async function(){
-    // Temporairement on stocke le nom pour que olHostStart l'utilise
-    window._olHostNameOverride = name;
-    await _origCreate();
-  };
-
-  // Override olHostStart pour utiliser le bon nom
-  const _origHostStart = olHostStart;
-  window.olHostStart = async function(){
-    const override = window._olHostNameOverride;
-    if(override){
-      // Patch: remplacer 'Hôte' dans la room
-      const room = await olRead(OL.roomCode);
-      if(room && room.players[0]?.name === 'Hôte'){
-        room.players[0].name = override;
-        OL.myName = override;
-        await olWrite(OL.roomCode, room);
-      }
-    }
-    await _origHostStart();
-  };
+  // OL.myName sera utilisé comme nom d'hôte dans olCreateRoom
+  OL._discordHostName = name;
 }
 
 // ══════════════════════════════════════════
@@ -3437,20 +3423,3 @@ init();
 <div class="footer-copy">© COPYRIGHT BY TMK — ALL RIGHTS RESERVED</div>
 </body>
 </html>
-
-
-window.addEventListener('load', () => {
-  initDiscord().catch(console.error);
-});
-
-iframe {
-  pointer-events: auto !important;
-}
-
-body {
-  pointer-events: auto !important;
-}
-
-.screen {
-  pointer-events: auto;
-}
