@@ -497,8 +497,6 @@ label{display:block;font-size:.75rem;color:var(--text2);margin-bottom:5px;font-w
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <!-- Discord Embedded App SDK -->
-  <script src="https://cdn.discordapp.com/activities/sdk.js"></script>
 </head>
 <body>
 <div class="pixel-grid"></div>
@@ -1399,10 +1397,8 @@ function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&l
 function spawnConfetti(){ confetti(); }
 
 function showScreen(id){
-  try{ sfxPixelClick(); }catch(e){}
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  window.scrollTo(0,0);
 }
 
 function toast(msg, type=''){
@@ -2962,146 +2958,6 @@ function flashScreen(color='#ffffff', dur=200){
   setTimeout(()=>el.remove(), dur+50);
 }
 
-
-// ══════════════════════════════════════════════════════════════════════
-// DISCORD ACTIVITY INTEGRATION
-// ══════════════════════════════════════════════════════════════════════
-let discordSdk    = null;
-let discordUser   = null;
-let isDiscordActivity = false;
-
-async function initDiscord(){
-  // 1. Pas dans Discord → mode standalone normal
-  if(typeof DiscordSDK === 'undefined'){
-    console.log('[Discord] Mode standalone — pas dans Discord');
-    return;
-  }
-
-  try {
-    isDiscordActivity = true;
-
-    // 2. Récupérer le CLIENT_ID depuis le serveur (jamais hardcodé)
-    const cidRes = await fetch('/api/client-id');
-    const { client_id } = await cidRes.json();
-    if(!client_id){
-      console.warn('[Discord] CLIENT_ID manquant — vérifie les variables Railway');
-      isDiscordActivity = false;
-      return;
-    }
-
-    // 3. Init SDK + attendre que Discord soit prêt
-    discordSdk = new DiscordSDK(client_id);
-    await discordSdk.ready();
-    console.log('[Discord] SDK prêt ✅');
-
-    // 4. OAuth2 — autoriser l'app
-    const { code } = await discordSdk.commands.authorize({
-      client_id,
-      response_type: 'code',
-      state: '',
-      prompt: 'none',
-      scope: ['identify', 'guilds.members.read'],
-    });
-
-    // 5. Échanger le code contre un token (côté serveur)
-    const tokenRes = await fetch('/api/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
-    });
-    const { access_token, error } = await tokenRes.json();
-    if(error || !access_token){
-      throw new Error('Token exchange failed: ' + (error || 'unknown'));
-    }
-
-    // 6. Authentifier le SDK
-    await discordSdk.commands.authenticate({ access_token });
-
-    // 7. Récupérer l'utilisateur courant
-    const userRes = await fetch('https://discord.com/api/users/@me', {
-      headers: { Authorization: `Bearer ${access_token}` },
-    });
-    discordUser = await userRes.json();
-    console.log('[Discord] Connecté en tant que:', discordUser.username);
-
-    // 8. Pré-remplir le nom du joueur avec le pseudo Discord
-    const displayName = discordUser.global_name || discordUser.username;
-    document.getElementById('ol-join-name').value = displayName;
-    // Pour l'hôte, le nom sera "displayName" au lieu de "Hôte"
-    window._discordDisplayName = displayName;
-
-    // 9. Récupérer les participants du salon vocal
-    try {
-      const { participants } = await discordSdk.commands.getInstanceConnectedParticipants();
-      console.log('[Discord] Joueurs dans le salon:', participants.length);
-      window._discordParticipants = participants;
-    } catch(e) {
-      console.log('[Discord] Impossible de récupérer les participants:', e.message);
-    }
-
-    // 10. Afficher le badge Discord
-    _showDiscordBadge(discordUser);
-
-    // 11. Modifier olCreateRoom pour utiliser le vrai nom Discord
-    _patchOlForDiscord();
-
-  } catch(err){
-    console.error('[Discord] Erreur init:', err.message);
-    isDiscordActivity = false;
-  }
-}
-
-function _showDiscordBadge(user){
-  const el = document.createElement('div');
-  el.id = 'discord-badge';
-  el.style.cssText = [
-    'position:fixed;top:8px;right:8px;z-index:9990',
-    'display:flex;align-items:center;gap:5px',
-    'background:rgba(88,101,242,.15);border:1px solid rgba(88,101,242,.35)',
-    'border-radius:5px;padding:4px 9px',
-    'font-family:var(--font-pixel);font-size:.42rem;color:#7289da;letter-spacing:.8px',
-    'pointer-events:none'
-  ].join(';');
-  const avatarUrl = user.avatar
-    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
-    : null;
-  el.innerHTML = (avatarUrl
-    ? `<img src="${avatarUrl}" width="16" height="16" style="border-radius:3px;image-rendering:pixelated">`
-    : '🎮')
-    + ` ${escHtml(user.global_name || user.username)}`;
-  document.body.appendChild(el);
-}
-
-function _patchOlForDiscord(){
-  // Remplacer "Hôte" par le vrai nom Discord quand on crée une room
-  const name = window._discordDisplayName;
-  if(!name) return;
-
-  // Override olCreateRoom pour injecter le nom Discord
-  const _origCreate = olCreateRoom;
-  window.olCreateRoom = async function(){
-    // Temporairement on stocke le nom pour que olHostStart l'utilise
-    window._olHostNameOverride = name;
-    await _origCreate();
-  };
-
-  // Override olHostStart pour utiliser le bon nom
-  const _origHostStart = olHostStart;
-  window.olHostStart = async function(){
-    const override = window._olHostNameOverride;
-    if(override){
-      // Patch: remplacer 'Hôte' dans la room
-      const room = await olRead(OL.roomCode);
-      if(room && room.players[0]?.name === 'Hôte'){
-        room.players[0].name = override;
-        OL.myName = override;
-        await olWrite(OL.roomCode, room);
-      }
-    }
-    await _origHostStart();
-  };
-}
-
 // ══════════════════════════════════════════
 // PIXEL CHARACTERS — background animation
 // ══════════════════════════════════════════
@@ -3160,16 +3016,19 @@ SFX.click = function(){ sfxPixelClick(); };
 // ══════════════════════════════════════════
 // SCREEN TRANSITION SOUND
 // ══════════════════════════════════════════
-// SFX intégré directement dans showScreen
+// Screen transition with pixel click sound
+const _origShowScreen = showScreen;
+showScreen = function(id){
+  sfxPixelClick();
+  _origShowScreen(id);
+};
 
-async function init(){
+function init(){
   ['Alice','Bob','Charlie','Diana'].forEach(n=>state.players.push(n));
   renderPlayers();
   updateRolesInfo();
   renderCategories();
   initPixelChars();
-  // Init Discord si disponible — ne bloque JAMAIS le jeu
-  try{ await initDiscord(); }catch(e){ console.warn('[Discord] Init skipped:', e.message); }
 }
 
 init();
