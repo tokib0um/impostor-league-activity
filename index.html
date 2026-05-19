@@ -506,11 +506,9 @@ label{display:block;font-size:.75rem;color:var(--text2);margin-bottom:5px;font-w
   background:linear-gradient(transparent,rgba(4,4,12,.6));
 }
 </style>
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-  <!-- Discord Embedded App SDK -->
+  <!-- Discord Embedded App SDK — chargé en premier -->
   <script src="https://cdn.discordapp.com/activities/sdk.js"></script>
+  <!-- Firebase chargé dynamiquement APRÈS patchUrlMappings (voir initFirebase()) -->
 </head>
 <body>
 <div class="pixel-grid"></div>
@@ -2050,6 +2048,31 @@ function showRules(){
 // Remplace ton FIREBASE_CONFIG ci-dessous avec ta config Firebase
 // ══════════════════════════════════════════════════════════════════════
 
+
+// ══════════════════════════════════════════════════════════════
+// FIREBASE — chargement dynamique (après patchUrlMappings Discord)
+// ══════════════════════════════════════════════════════════════
+let _firebaseLoaded = false;
+
+function _loadScript(src){
+  return new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = src;
+    s.onload  = resolve;
+    s.onerror = () => reject(new Error('Failed to load: ' + src));
+    document.head.appendChild(s);
+  });
+}
+
+async function initFirebase(){
+  if(_firebaseLoaded) return;
+  // Charger les SDK Firebase (après patchUrlMappings si Discord)
+  await _loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js');
+  await _loadScript('https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js');
+  _firebaseLoaded = true;
+  console.log('[Firebase] SDK chargé');
+}
+
 // ─── CONFIGURATION FIREBASE ─────────────────────────────────────────────
 const FIREBASE_CONFIG = {
   apiKey:            "AIzaSyDRG5M9RLk-C87WxOPkSIZIQXo66kIuBRo",
@@ -2071,9 +2094,9 @@ function fbGetDb(){
   // Déjà initialisé
   if(_fbDb) return _fbDb;
 
-  // Vérif SDK chargé
+  // Firebase pas encore chargé ?
   if(typeof firebase === 'undefined'){
-    throw new Error('Firebase SDK non chargé — vérifiez votre connexion internet');
+    throw new Error('Firebase SDK non chargé — appelle initFirebase() d abord');
   }
 
   // Config non remplie
@@ -2986,7 +3009,6 @@ let discordUser   = null;
 let isDiscordActivity = false;
 
 async function initDiscord(){
-  // Pas dans Discord → mode standalone normal (GitHub Pages, navigateur direct)
   if(typeof DiscordSDK === 'undefined'){
     console.log('[Discord] Mode standalone');
     return;
@@ -2995,187 +3017,86 @@ async function initDiscord(){
   try{
     isDiscordActivity = true;
 
-    // ── Étape 1: Récupérer le CLIENT_ID depuis Railway ───────────────
+    // 1. CLIENT_ID depuis Railway
     let client_id = '';
     try{
       const cidRes = await fetch('/api/client-id');
-      const data   = await cidRes.json();
-      client_id    = data.client_id || '';
-    } catch(e){
-      console.warn('[Discord] /api/client-id inaccessible:', e.message);
-    }
-    if(!client_id){
-      console.warn('[Discord] CLIENT_ID vide — activité Discord non configurée');
-      isDiscordActivity = false;
-      return;
-    }
+      if(cidRes.ok){ const d = await cidRes.json(); client_id = d.client_id||''; }
+    }catch(e){}
+    if(!client_id){ console.warn('[Discord] CLIENT_ID manquant'); isDiscordActivity=false; return; }
 
-    // ── Étape 2: Init SDK ────────────────────────────────────────────
+    // 2. Init SDK
     discordSdk = new DiscordSDK(client_id);
     await discordSdk.ready();
-    console.log('[Discord] ✅ SDK prêt');
+    console.log('[Discord] SDK prêt');
 
-    // ── Étape 3: CRITICAL — patchUrlMappings ────────────────────────
-    // Discord proxifie TOUTES les requêtes via *.discordsays.com
-    // Sans ça, les fetch() vers /api/* et Firebase échouent dans l'iframe
-    if(discordSdk.patchUrlMappings){
-      discordSdk.patchUrlMappings([
-        // Notre serveur Railway → proxifié via Discord
-        { prefix: '/api', target: window.location.origin },
-        // Firebase Realtime Database → autorisé
-        { prefix: 'https://undercover-3b721-default-rtdb.europe-west1.firebasedatabase.app',
-          target: 'https://undercover-3b721-default-rtdb.europe-west1.firebasedatabase.app' },
-      ]);
-      console.log('[Discord] ✅ URL mappings patchés');
+    // 3. patchUrlMappings — CRITIQUE — doit être avant tout fetch externe
+    // Réécrit fetch/XHR/WebSocket pour passer par /.proxy/ (proxy Discord)
+    const mappings = [
+      { prefix: 'https://undercover-3b721-default-rtdb.europe-west1.firebasedatabase.app',
+        target: 'undercover-3b721-default-rtdb.europe-west1.firebasedatabase.app' },
+      { prefix: 'https://www.gstatic.com', target: 'www.gstatic.com' },
+      { prefix: 'https://fonts.googleapis.com', target: 'fonts.googleapis.com' },
+    ];
+    if(typeof DiscordSDK.patchUrlMappings === 'function'){
+      DiscordSDK.patchUrlMappings(mappings);
+    } else if(discordSdk.patchUrlMappings){
+      discordSdk.patchUrlMappings(mappings);
     }
+    console.log('[Discord] URL mappings patchés');
 
-    // ── Étape 4: OAuth2 authorization ───────────────────────────────
+    // 3b. Charger Firebase APRÈS patchUrlMappings
+    await initFirebase();
+    console.log('[Discord] Firebase chargé après patch');
+
+    // 4. OAuth2
     const { code } = await discordSdk.commands.authorize({
-      client_id,
-      response_type: 'code',
-      state: '',
-      prompt: 'none',
-      scope: ['identify'],
+      client_id, response_type:'code', state:'', prompt:'none',
+      scope: ['identify','guilds'],
     });
 
-    // ── Étape 5: Token exchange via notre serveur ────────────────────
-    const tokenRes = await fetch('/api/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    // 5. Token exchange via /.proxy/api/token (pas /api/token direct !)
+    const tokenRes = await fetch('/.proxy/api/token', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ code }),
     });
-    const tokenData = await tokenRes.json();
-    if(!tokenData.access_token){
-      throw new Error('Token exchange failed: ' + (tokenData.error || 'unknown'));
-    }
+    if(!tokenRes.ok) throw new Error('Token fetch: ' + tokenRes.status);
+    const { access_token } = await tokenRes.json();
+    if(!access_token) throw new Error('Pas d accès token');
 
-    // ── Étape 6: Authenticate SDK ────────────────────────────────────
-    await discordSdk.commands.authenticate({ access_token: tokenData.access_token });
-    console.log('[Discord] ✅ Authentifié');
+    // 6. Authenticate
+    const auth = await discordSdk.commands.authenticate({ access_token });
 
-    // ── Étape 7: Récupérer l'utilisateur ────────────────────────────
-    const userRes = await fetch('https://discord.com/api/users/@me', {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` },
-    });
-    discordUser = await userRes.json();
-    const displayName = discordUser.global_name || discordUser.username || 'Joueur';
-    console.log('[Discord] ✅ Connecté:', displayName);
+    // 7. User info (dans auth.user directement — pas besoin de fetch séparé)
+    discordUser = auth.user;
+    const displayName = discordUser?.global_name || discordUser?.username || 'Joueur';
+    console.log('[Discord] Connecté:', displayName);
 
-    // ── Étape 8: Pré-remplir nom Discord dans l'UI ───────────────────
+    // 8. Pre-fill UI
     const joinEl = document.getElementById('ol-join-name');
     if(joinEl) joinEl.value = displayName;
     window._discordDisplayName = displayName;
-    OL.myName            = displayName;
-    OL._discordHostName  = displayName;
+    OL.myName           = displayName;
+    OL._discordHostName = displayName;
 
-    // ── Étape 9: Participants du salon vocal ─────────────────────────
+    // 9. Participants
     try{
       const { participants } = await discordSdk.commands.getInstanceConnectedParticipants();
-      window._discordParticipants = participants || [];
-      console.log('[Discord] Participants:', window._discordParticipants.length);
-    }catch(e){
-      window._discordParticipants = [];
-    }
+      window._discordParticipants = participants||[];
+    }catch(e){ window._discordParticipants=[]; }
 
-    // ── Étape 10: Badge UI + patch noms ─────────────────────────────
+    // 10. Badge + patch
     _showDiscordBadge(discordUser);
     _patchOlForDiscord();
+    console.log('[Discord] Init OK pour', displayName);
 
   }catch(err){
-    console.error('[Discord] ❌ Erreur init:', err.message);
+    console.error('[Discord] Erreur:', err.message);
     isDiscordActivity = false;
-    // Le jeu continue normalement en mode standalone
   }
 }
 
-function _showDiscordBadge(user){
-  const el = document.createElement('div');
-  el.id = 'discord-badge';
-  el.style.cssText = [
-    'position:fixed;top:8px;right:8px;z-index:9990',
-    'display:flex;align-items:center;gap:5px',
-    'background:rgba(88,101,242,.15);border:1px solid rgba(88,101,242,.35)',
-    'border-radius:5px;padding:4px 9px',
-    'font-family:var(--font-pixel);font-size:.42rem;color:#7289da;letter-spacing:.8px',
-    'pointer-events:none'
-  ].join(';');
-  const avatarUrl = user.avatar
-    ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
-    : null;
-  el.innerHTML = (avatarUrl
-    ? `<img src="${avatarUrl}" width="16" height="16" style="border-radius:3px;image-rendering:pixelated">`
-    : '🎮')
-    + ` ${escHtml(user.global_name || user.username)}`;
-  document.body.appendChild(el);
-}
-
-function _patchOlForDiscord(){
-  // Stocker le nom Discord dans OL — olCreateRoom l'utilisera directement
-  const name = window._discordDisplayName;
-  if(!name) return;
-  // OL.myName sera utilisé comme nom d'hôte dans olCreateRoom
-  OL._discordHostName = name;
-}
-
-// ══════════════════════════════════════════
-// PIXEL CHARACTERS — background animation
-// ══════════════════════════════════════════
-const PIXEL_CHARS_SVG = [
-  // Luffy chapeau
-  `<svg viewBox="0 0 16 16" width="40" height="40"><rect x="3" y="2" width="10" height="2" fill="#cc0000"/><rect x="1" y="4" width="14" height="1" fill="#cc0000"/><rect x="4" y="5" width="8" height="6" fill="#ffcc88"/><rect x="5" y="7" width="2" height="2" fill="#222"/><rect x="9" y="7" width="2" height="2" fill="#222"/><rect x="6" y="10" width="4" height="1" fill="#cc4400"/><rect x="3" y="11" width="10" height="2" fill="#ffcc88"/><rect x="2" y="13" width="12" height="1" fill="#cc0000"/></svg>`,
-  // Naruto
-  `<svg viewBox="0 0 16 16" width="40" height="40"><rect x="4" y="1" width="8" height="2" fill="#ffcc00"/><rect x="3" y="3" width="10" height="6" fill="#ffcc88"/><rect x="4" y="5" width="2" height="2" fill="#333"/><rect x="10" y="5" width="2" height="2" fill="#333"/><rect x="5" y="8" width="6" height="1" fill="#cc4400"/><rect x="3" y="9" width="1" height="2" fill="#ff8800"/><rect x="12" y="9" width="1" height="2" fill="#ff8800"/><rect x="4" y="11" width="8" height="3" fill="#ee8800"/></svg>`,
-  // Batman
-  `<svg viewBox="0 0 16 16" width="40" height="40"><rect x="1" y="2" width="3" height="4" fill="#222"/><rect x="12" y="2" width="3" height="4" fill="#222"/><rect x="4" y="1" width="8" height="7" fill="#333"/><rect x="5" y="3" width="2" height="2" fill="#ffee88"/><rect x="9" y="3" width="2" height="2" fill="#ffee88"/><rect x="4" y="8" width="8" height="6" fill="#222"/><rect x="3" y="9" width="10" height="1" fill="#444"/><rect x="6" y="6" width="4" height="1" fill="#ffee88"/></svg>`,
-  // Goku
-  `<svg viewBox="0 0 16 16" width="40" height="40"><rect x="3" y="0" width="10" height="3" fill="#111"/><rect x="4" y="3" width="8" height="5" fill="#ffcc88"/><rect x="5" y="5" width="2" height="2" fill="#222"/><rect x="9" y="5" width="2" height="2" fill="#222"/><rect x="6" y="7" width="4" height="1" fill="#cc3300"/><rect x="3" y="8" width="10" height="5" fill="#ee8800"/><rect x="5" y="8" width="6" height="1" fill="#ffaa00"/></svg>`,
-  // Spider-Man
-  `<svg viewBox="0 0 16 16" width="40" height="40"><rect x="4" y="2" width="8" height="7" fill="#cc0000"/><rect x="5" y="3" width="2" height="3" fill="#fff"/><rect x="9" y="3" width="2" height="3" fill="#fff"/><rect x="4" y="9" width="4" height="4" fill="#cc0000"/><rect x="8" y="9" width="4" height="4" fill="#0000cc"/><rect x="3" y="5" width="1" height="3" fill="#cc0000"/><rect x="12" y="5" width="1" height="3" fill="#cc0000"/></svg>`,
-  // Pikachu
-  `<svg viewBox="0 0 16 16" width="40" height="40"><rect x="2" y="0" width="2" height="4" fill="#222"/><rect x="12" y="0" width="2" height="4" fill="#222"/><rect x="4" y="3" width="8" height="7" fill="#ffee00"/><rect x="5" y="5" width="2" height="2" fill="#222"/><rect x="9" y="5" width="2" height="2" fill="#222"/><rect x="7" y="8" width="2" height="1" fill="#222"/><rect x="2" y="7" width="2" height="2" fill="#ff6666"/><rect x="12" y="7" width="2" height="2" fill="#ff6666"/><rect x="4" y="10" width="8" height="3" fill="#ffee00"/></svg>`,
-  // Joker card
-  `<svg viewBox="0 0 16 16" width="40" height="40"><rect x="2" y="1" width="12" height="14" fill="#fff"/><rect x="3" y="2" width="10" height="12" fill="#f5f5f5"/><rect x="4" y="3" width="3" height="1" fill="#222"/><rect x="9" y="3" width="3" height="1" fill="#222"/><rect x="6" y="7" width="4" height="4" fill="#cc0000"/><rect x="7" y="6" width="2" height="6" fill="#cc0000"/><rect x="4" y="12" width="3" height="1" fill="#222"/><rect x="9" y="12" width="3" height="1" fill="#222"/></svg>`,
-  // Star
-  `<svg viewBox="0 0 16 16" width="36" height="36"><polygon points="8,1 10,6 15,6 11,9 13,14 8,11 3,14 5,9 1,6 6,6" fill="#ffe600"/></svg>`,
-];
-
-function initPixelChars(){
-  const container = document.getElementById('pixel-bg-chars');
-  if(!container) return;
-  for(let i=0;i<12;i++){
-    const el = document.createElement('div');
-    el.className = 'px-char';
-    el.innerHTML = PIXEL_CHARS_SVG[i % PIXEL_CHARS_SVG.length];
-    const left = Math.random()*90;
-    const dur  = 8 + Math.random()*14;
-    const del  = Math.random()*10;
-    const size = 0.6 + Math.random()*0.8;
-    el.style.cssText = `left:${left}%;animation-duration:${dur}s;animation-delay:-${del}s;transform:scale(${size})`;
-    container.appendChild(el);
-  }
-}
-
-// ══════════════════════════════════════════
-// ENHANCED SFX
-// ══════════════════════════════════════════
-// Extra SFX methods wired to game events
-function sfxPixelClick(){
-  sfxTone(1200,'square',0.06,0.04);
-}
-function sfxJoin(){
-  sfxTone(500,'square',0.08,0.05,0);
-  sfxTone(700,'square',0.1,0.07,0.06);
-  sfxTone(900,'square',0.08,0.05,0.13);
-}
-
-// Override SFX.click for pixel feel
-const _origClick = SFX.click;
-SFX.click = function(){ sfxPixelClick(); };
-
-// ══════════════════════════════════════════
-// SCREEN TRANSITION SOUND
-// ══════════════════════════════════════════
-// SFX intégré directement dans showScreen
 
 async function init(){
   ['Alice','Bob','Charlie','Diana'].forEach(n=>state.players.push(n));
@@ -3183,8 +3104,17 @@ async function init(){
   updateRolesInfo();
   renderCategories();
   initPixelChars();
-  // Init Discord si disponible — ne bloque JAMAIS le jeu
-  try{ await initDiscord(); }catch(e){ console.warn('[Discord] Init skipped:', e.message); }
+
+  // Si Discord Activity → initDiscord charge Firebase APRÈS patchUrlMappings
+  // Si mode standalone → on charge Firebase directement maintenant
+  if(typeof DiscordSDK !== 'undefined'){
+    try{ await initDiscord(); }catch(e){ console.warn('[Discord] Init skipped:', e.message); }
+    // Si initDiscord a échoué → charger Firebase en fallback
+    if(!_firebaseLoaded){ try{ await initFirebase(); }catch(e){ console.error('[Firebase] Load error:', e.message); } }
+  } else {
+    // Mode standalone (navigateur normal, GitHub Pages)
+    try{ await initFirebase(); }catch(e){ console.error('[Firebase] Load error:', e.message); }
+  }
 }
 
 init();
